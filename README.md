@@ -177,4 +177,5 @@ Code: **Hermes Agent** (Nous Research), model `deepseek-v4.1-flash`. See [docs/C
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE). Third-party notices (models used to write the code, no
+weights redistributed, embedded CA bundle): [NOTICE.md](NOTICE.md).

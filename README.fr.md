@@ -174,3 +174,9 @@ Code : **Hermes Agent** (Nous Research), modèle `deepseek-v4.1-flash`. Voir [do
 ## Licence
 
 MIT — voir [LICENSE](LICENSE).
+
+## Mentions tierces
+
+[NOTICE.md](NOTICE.md) : modèles utilisés pour écrire le code (aucun poids
+redistribué, licence du modèle non contaminante), bundle de racines TLS embarqué,
+marques citées à titre descriptif.
