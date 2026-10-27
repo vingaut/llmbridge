@@ -4,20 +4,15 @@
 
 *Français : [README.fr.md](README.fr.md).*
 
-LLMBridge is a single-file desktop tool. It probes an OpenAI-compatible API on your
-network (`http://ip:port/v1`), works out the context window, modalities and exposed
-model, then writes a ready-to-use provider into the configuration files of the
-harnesses installed on the machine — with a timestamped backup before every write.
+LLMBridge is a tool that automates 90% of the configuration process for local providers within the following harnesses:
+- HERMES
+- DeepSeek Harness
+- OPENCODE V2
+I’m constantly breaking my own workflows, and I got tired of having to re-enter everything into those wretched CLIs!
 
-It exists because a plain HTML page **cannot** do this job. Two things are blocked
-by the browser when the page is opened as `file://`:
+I wanted a dependency-free tool that could be run on any machine on a local network to update the local providers used in the most common harnesses.
 
-| Blocker | What happens |
-|---|---|
-| **CORS** | `fetch()` sends `Origin: null`; the inference server answers `200` but without `Access-Control-Allow-Origin`, so the browser discards the response. Many servers also reject the `OPTIONS` preflight (`403`). |
-| **Disk access** | File System Access needs a stable origin and a per-folder grant; from `file://` the origin is opaque, handles cannot be persisted, and failures look like *“folder refused”*. |
-
-LLMBridge does both server-side, on `127.0.0.1` only, and serves the UI from there.
+It’s probably entirely pointless, but it’s all hand-crafted! Well... it’s hosted and powered locally—not a single token comes from China or the US!
 
 ---
 
