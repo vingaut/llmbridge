@@ -4,12 +4,12 @@
 
 | Rôle | Nom |
 |---|---|
-| Architecture, conception d'origine, spécifications, recette | **vinga** |
+| Architecture, conception d'origine, spécifications, recette | **Vincent GAUTIER** (vingaut) |
 | Code (v2.1 → v3.0), tests, documentation | **Hermes Agent** — Nous Research |
 
-Le point de départ est l'outil `config-endpoint-llm.html` conçu et écrit par vinga :
-une page HTML autonome qui sondait l'API en `fetch()` et écrivait via File System
-Access. La v1 ne pouvait pas fonctionner en `file://` (CORS + origine opaque) ; la
+Le point de départ est l'outil `config-endpoint-llm.html` conçu et écrit par Vincent
+GAUTIER : une page HTML autonome qui sondait l'API en `fetch()` et écrivait via File
+System Access. La v1 ne pouvait pas fonctionner en `file://` (CORS + origine opaque) ; la
 réécriture conserve son interface, son vocabulaire et ses trois modes d'écriture, et
 remplace la couche de transport par un pont local.
 

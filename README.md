@@ -172,8 +172,8 @@ More in [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
 
 ## Credits
 
-Architecture and original design: **vinga**. Code: **Hermes Agent** (Nous Research),
-model `deepseek-v4.1-flash`. See [docs/CREDITS.md](docs/CREDITS.md).
+Architecture and original design: **Vincent GAUTIER** ([@vingaut](https://github.com/vingaut)).
+Code: **Hermes Agent** (Nous Research), model `deepseek-v4.1-flash`. See [docs/CREDITS.md](docs/CREDITS.md).
 
 ## License
 
