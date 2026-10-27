@@ -1,0 +1,51 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            name: windows-x64
+            artifact: LLMBridge.exe
+            asset: LLMBridge-windows-x64.exe
+          - os: ubuntu-latest
+            name: linux-x64
+            artifact: LLMBridge
+            asset: LLMBridge-linux-x64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install PyInstaller
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "pyinstaller>=6.10"
+
+      - name: Build
+        run: pyinstaller --clean --noconfirm llm-bridge.spec
+
+      - name: Rename asset
+        shell: bash
+        run: cp "dist/${{ matrix.artifact }}" "dist/${{ matrix.asset }}"
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/${{ matrix.asset }}
+          generate_release_notes: true
+          body_path: CHANGELOG.md

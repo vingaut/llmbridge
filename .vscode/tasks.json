@@ -1,0 +1,35 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Construire l'exe (dist/LLMBridge.exe)",
+      "type": "shell",
+      "command": "powershell",
+      "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}\\build.ps1"],
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "Lancer en dev (sans rebuild)",
+      "type": "shell",
+      "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+      "args": ["app.py"],
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Lancer l'exe compilé",
+      "type": "shell",
+      "command": "${workspaceFolder}\\dist\\LLMBridge.exe",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Lister les harnais détectés",
+      "type": "shell",
+      "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+      "args": ["app.py", "--list"],
+      "problemMatcher": []
+    }
+  ]
+}

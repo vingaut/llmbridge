@@ -1,0 +1,3305 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Endpoint LLM &rarr; opencode / Hermes / dsh</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#151b23; --panel2:#1b232d; --line:#2a3542;
+    --fg:#e6edf3; --dim:#8b98a5; --acc:#4da3ff; --ok:#3fb950; --warn:#d29922; --err:#f85149;
+    --mono:ui-monospace,"Cascadia Code",Consolas,"SF Mono",Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,"Segoe UI",Roboto,sans-serif}
+  header{padding:18px 22px 12px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#141b24,#0d1117)}
+  h1{margin:0;font-size:17px}
+  h1 span{color:var(--acc)}
+  .sub{color:var(--dim);font-size:12.5px;margin-top:4px;max-width:1050px}
+  main{padding:14px 22px 70px;max-width:1180px}
+  section{background:var(--panel);border:1px solid var(--line);border-radius:10px;margin:14px 0;overflow:hidden}
+  section>.hd{padding:10px 14px;font-size:12.5px;text-transform:uppercase;letter-spacing:.9px;
+    color:var(--dim);border-bottom:1px solid var(--line);background:var(--panel2);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .n{background:var(--acc);color:#04121f;border-radius:50%;width:19px;height:19px;display:grid;place-items:center;font-size:11px;font-weight:700}
+  .body{padding:14px}
+  label{display:block;font-size:11.5px;color:var(--dim);margin:0 0 4px;text-transform:uppercase;letter-spacing:.5px}
+  input[type=text],input[type=number],input[type=password],select,textarea{
+    width:100%;background:#0b1016;color:var(--fg);border:1px solid var(--line);border-radius:6px;
+    padding:7px 9px;font-family:var(--mono);font-size:13px}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc)}
+  textarea{resize:vertical}
+  .row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+  .row>*{min-width:0}
+  .g1{flex:1 1 100%}.g2{flex:1 1 210px}.g3{flex:1 1 135px}.g4{flex:0 0 auto}
+  button{background:#22303e;color:var(--fg);border:1px solid #35485c;border-radius:6px;padding:8px 13px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+  button:hover:not(:disabled){background:#2c3e50;border-color:var(--acc)}
+  button:disabled{opacity:.42;cursor:not-allowed}
+  button.primary{background:#1f6feb;border-color:#388bfd}
+  button.primary:hover:not(:disabled){background:#2b7bff}
+  button.danger{background:#3a1d1d;border-color:#6e2c2c}
+  button.danger:hover:not(:disabled){border-color:var(--err)}
+  button.ghost{background:transparent}
+  button.mini{padding:4px 9px;font-size:11.5px;font-weight:500}
+  .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.4px}
+  .b-ok{background:rgba(63,185,80,.16);color:var(--ok);border:1px solid rgba(63,185,80,.4)}
+  .b-err{background:rgba(248,81,73,.14);color:var(--err);border:1px solid rgba(248,81,73,.4)}
+  .b-warn{background:rgba(210,153,34,.14);color:var(--warn);border:1px solid rgba(210,153,34,.4)}
+  .b-mut{background:#1d2732;color:var(--dim);border:1px solid var(--line)}
+  .b-acc{background:rgba(77,163,255,.14);color:var(--acc);border:1px solid rgba(77,163,255,.4)}
+  table{border-collapse:collapse;width:100%;font-size:12.5px}
+  th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+  tbody tr.click:hover{background:#1a222c;cursor:pointer}
+  code,.mono{font-family:var(--mono);font-size:12.5px}
+  pre{background:#0b1016;border:1px solid var(--line);border-radius:8px;padding:12px;overflow:auto;
+    font-family:var(--mono);font-size:12px;max-height:400px;margin:0;white-space:pre}
+  .log{background:#0b1016;border:1px solid var(--line);border-radius:8px;padding:10px 12px;
+    font-family:var(--mono);font-size:11.5px;max-height:280px;overflow:auto;white-space:pre-wrap}
+  .log .t{color:#5c6a77}.log .ok{color:var(--ok)}.log .er{color:var(--err)}.log .w{color:var(--warn)}.log .i{color:var(--acc)}
+  .hint{color:var(--dim);font-size:11.5px;margin-top:4px}
+  .chk{display:flex;align-items:center;gap:7px;font-size:13px;margin:3px 0;color:var(--fg);text-transform:none;letter-spacing:0;cursor:pointer}
+  .chk input{width:auto;margin:0}
+  .modes{display:flex;gap:8px;flex-wrap:wrap}
+  .modes label{display:flex;gap:8px;align-items:flex-start;text-transform:none;letter-spacing:0;color:var(--fg);font-size:12.5px;
+    padding:8px 10px;border:1px solid var(--line);border-radius:8px;cursor:pointer;background:#111821;margin:0;flex:1 1 190px}
+  .modes label.on{border-color:var(--acc);background:#13233a}
+  .modes label[data-mode=replace].on,.modes label[data-mode=reset].on{border-color:var(--err);background:#2a1518}
+  .modes input{margin-top:3px}
+  .modes b{display:block}
+  .modes small{color:var(--dim);font-size:11px;display:block;margin-top:2px;line-height:1.35}
+  .split{display:grid;grid-template-columns:1.25fr 1fr;gap:12px}
+  @media(max-width:980px){.split{grid-template-columns:1fr}}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .err{color:var(--err)}.ok{color:var(--ok)}.dim{color:var(--dim)}
+  hr{border:0;border-top:1px solid var(--line);margin:12px 0}
+  .card{border:1px solid var(--line);border-radius:10px;margin:12px 0;overflow:hidden;background:#111821}
+  .card.off{opacity:.55}
+  .card>.hd{display:flex;gap:9px;align-items:center;padding:9px 12px;background:var(--panel2);border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .card>.hd b{font-size:13.5px}
+  .card>.bd{padding:12px}
+  .chip{display:inline-flex;align-items:center;gap:5px;background:#182029;border:1px solid var(--line);border-radius:14px;
+    padding:2px 9px;font-size:11.5px;font-family:var(--mono);cursor:pointer}
+  .chip:hover{border-color:var(--acc)}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:12px}
+  .kv>div:nth-child(odd){color:var(--dim)}
+  .env{background:#131a22;border:1px dashed #35485c;border-radius:8px;padding:10px;margin-top:8px}
+  a{color:var(--acc)}
+  .hdr-tools{position:absolute;top:16px;right:22px;display:flex;gap:8px;align-items:center}
+  .hdr-tools select{width:auto;padding:5px 8px;font-size:12px}
+  .modal{position:fixed;inset:0;background:rgba(3,7,12,.72);display:none;z-index:60;padding:40px 18px;overflow:auto}
+  .modal.open{display:block}
+  .modal .box{max-width:900px;margin:0 auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .modal .box>.hd{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--panel2);border-bottom:1px solid var(--line)}
+  .modal .box>.bd{padding:16px 20px 26px;font-size:13.5px;line-height:1.6}
+  .modal h3{margin:18px 0 6px;font-size:14px;color:var(--acc)}
+  .modal h3:first-child{margin-top:0}
+  .modal ul{margin:6px 0 6px 18px;padding:0}
+  .modal li{margin:3px 0}
+  .modal table{margin:8px 0}
+  .modal code{background:#0b1016;border:1px solid var(--line);border-radius:4px;padding:1px 5px}
+  .modal pre{max-height:none}
+  .tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+  .tabs button{padding:5px 11px;font-size:12px}
+  .tabs button.on{background:#13233a;border-color:var(--acc)}
+  .note{color:var(--dim);font-size:12px;border-left:2px solid var(--line);padding-left:10px;margin:10px 0}
+  #pathsBox .row{margin-bottom:6px}
+  .pathline{display:grid;grid-template-columns:150px 1fr auto;gap:8px;align-items:center;margin:5px 0}
+  .pathline label{margin:0;text-transform:none;letter-spacing:0;font-size:12px}
+  .pathline input{font-size:12px}
+  .pathok{color:var(--ok)}.pathko{color:var(--err)}
+  .spin{display:inline-block;width:11px;height:11px;border:2px solid #35485c;border-top-color:var(--acc);border-radius:50%;animation:sp .8s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<header style="position:relative">
+  <h1>Endpoint LLM <span>&rarr;</span> opencode <span>/</span> Hermes <span>/</span> dsh
+    <span class="badge b-mut" id="fsBadge">…</span></h1>
+  <div class="hdr-tools">
+    <select id="langSel" aria-label="Language" title="Langue / Language"></select>
+    <button id="btnDocs" class="mini">Documentation</button>
+  </div>
+  <div class="sub">Sonde une API OpenAI-compatible (<span class="mono">http://ip:port/v1</span>) sur le réseau, puis écrit le fournisseur
+  dans les fichiers de configuration des harnais <b>détectés sur cette machine</b>. La sonde passe par <span class="mono">LLMBridge</span>
+  (pont local, aucune requête hors de l’endpoint que vous sondez)&nbsp;: c’est ce qui évite le blocage CORS qui rendait la version
+  <span class="mono">file://</span> inutilisable.</div>
+</header>
+<main>
+
+<section>
+  <div class="hd"><span class="n">1</span> Détection des harnais
+    <span id="rootName" class="dim mono"></span>
+    <span style="flex:1"></span>
+    <button id="btnDetect" class="primary">Scanner mes fichiers de configuration</button>
+    <button id="btnRedetect" class="ghost" disabled>Rescanner</button>
+  </div>
+  <div class="body">
+    <div class="hint" style="margin-top:0">Interface servie par <span class="mono">LLMBridge</span> (pont local sur <span class="mono">127.0.0.1</span>)&nbsp;: c’est le pont qui
+      lit et écrit les fichiers sur le disque et qui interroge l’API — le navigateur ne peut ni l’un ni l’autre depuis une page
+      <span class="mono">file://</span> (pas d’accès disque, et CORS bloque <span class="mono">Origin: null</span>).
+      Fichiers recherchés sous la racine scannée&nbsp;:
+      <span class="mono">.config/opencode/opencode.jsonc</span> · <span class="mono">.hermes/config.yaml</span> (+ <span class="mono">.hermes/.env</span>) ·
+      <span class="mono">.dsh/cordis.patch.yml</span> (+ <span class="mono">.dsh/.env</span>). Chaque écriture laisse une sauvegarde
+      <span class="mono">.bak-&lt;horodatage&gt;</span> à côté du fichier.</div>
+    <div id="detectOut" style="margin-top:10px"><span class="dim">Aucune détection lancée.</span></div>
+  </div>
+</section>
+
+<section>
+  <div class="hd"><span class="n">2</span> Endpoint &amp; test
+    <span style="flex:1"></span>
+    <span class="hint">le serveur peut être sur une autre machine du réseau</span>
+  </div>
+  <div class="body">
+    <div class="row">
+      <div class="g1">
+        <label for="endpoint">Base URL (les fautes de frappe sont corrigées&nbsp;: <span class="mono">http//192.168.1.170:8080/v1</span>)</label>
+        <div class="bar">
+          <input id="endpoint" type="text" style="flex:1 1 360px" placeholder="http://192.168.1.170:8080/v1" spellcheck="false">
+          <button id="btnTest" class="primary">Tester l’API</button>
+          <button id="btnProbeCtx" title="Envoie un max_tokens démesuré pour lire la fenêtre dans l’erreur du serveur">Sonder la fenêtre</button>
+        </div>
+      </div>
+      <div class="g3"><label for="apikey">Clé API</label><input id="apikey" type="text" placeholder="(aucune)" spellcheck="false"></div>
+    </div>
+    <div id="probeOut"></div>
+  </div>
+</section>
+
+<section>
+  <div class="hd"><span class="n">3</span> Fournisseur à écrire
+    <span style="flex:1"></span>
+    <button id="btnPreviewAll" class="primary">Aperçu pour tout</button>
+    <button id="btnWriteAll" class="danger" disabled>Écrire partout (cases cochées)</button>
+    <span id="globalState"></span>
+  </div>
+  <div class="body">
+    <div id="cards"><span class="dim">Revenez à l’étape 1&nbsp;: aucun fichier de configuration détecté.</span></div>
+  </div>
+</section>
+
+<section>
+  <div class="hd"><span class="n">4</span> Aperçu &amp; journal</div>
+  <div class="body">
+    <div class="bar" style="margin-bottom:10px">
+      <span id="previewTitle" class="dim">Aucun aperçu.</span>
+      <span style="flex:1"></span>
+      <button id="btnCopyPreview" class="mini">Copier l’aperçu</button>
+      <button id="btnDownloadPreview" class="mini" disabled>Télécharger</button>
+      <button id="btnBackup" class="mini" disabled>Télécharger la sauvegarde</button>
+    </div>
+    <div class="split">
+      <div><pre id="preview">—</pre></div>
+      <div><div class="log" id="log"></div></div>
+    </div>
+  </div>
+</section>
+
+<input type="file" id="filePick" accept=".jsonc,.json,.yaml,.yml,.txt,.env" style="display:none">
+
+<div class="modal" id="docsModal">
+  <div class="box">
+    <div class="hd"><b id="docsTitle">Documentation</b><span style="flex:1"></span>
+      <button class="mini" id="docsClose">✕</button></div>
+    <div class="box bd" id="docsBody" style="border:0"></div>
+  </div>
+</div>
+</main>
+
+<script>
+
+/* =====================================================================
+   NOYAU — fonctions pures, sans DOM, testables hors navigateur
+   ===================================================================== */
+const CORE = (function(){
+  const WS = /[ \t\r\n]/;
+
+  /* Signature des caractères : 'S' = quote délimitante, 's' = intérieur de chaîne,
+     'c' = intérieur d'un commentaire. Le squelette JSON = tout le reste. */
+  function sig(text){
+    const n = text.length, a = new Array(n).fill(null);
+    let i = 0;
+    while (i < n){
+      const c = text[i];
+      if (c === '"'){
+        a[i] = 'S'; let j = i + 1;
+        while (j < n){
+          if (text[j] === '\\'){ a[j]='s'; if(j+1<n) a[j+1]='s'; j += 2; continue; }
+          if (text[j] === '"'){ a[j] = 'S'; break; }
+          a[j] = 's'; j++;
+        }
+        i = j + 1; continue;
+      }
+      if (c === '/' && text[i+1] === '/'){
+        let j = text.indexOf('\n', i); if (j === -1) j = n;
+        for (let k = i; k < j; k++) a[k] = 'c';
+        i = j; continue;
+      }
+      if (c === '/' && text[i+1] === '*'){
+        let j = text.indexOf('*/', i + 2); j = j === -1 ? n : j + 2;
+        for (let k = i; k < j; k++) a[k] = 'c';
+        i = j; continue;
+      }
+      i++;
+    }
+    return a;
+  }
+
+  // position « structurelle » : hors commentaire, hors intérieur de chaîne,
+  // hors blanc et virgule. Les quotes ouvrantes/fermantes ('S') comptent.
+  const structural = (t,a,i)=> a[i] !== 's' && a[i] !== 'c' && !/[ \t\r\n,]/.test(t[i]);
+
+  function matchBracket(t,a,i){
+    const stack = [];
+    for (; i < t.length; i++){
+      if (a[i] === 'c' || a[i] === 's') continue;
+      const c = t[i];
+      if (c === '{' || c === '[') stack.push(c);
+      else if (c === '}' || c === ']'){ stack.pop(); if (!stack.length) return i; }
+    }
+    return -1;
+  }
+
+  function stringEnd(t,a,i){ // i sur la quote ouvrante -> index après la fermante
+    for (let j = i + 1; j < t.length; j++) if (a[j] === 'S') return j + 1;
+    return t.length;
+  }
+
+  function valueEnd(t,a,i){
+    if (a[i] === 'S') return stringEnd(t,a,i);
+    if (t[i] === '{' || t[i] === '['){ const e = matchBracket(t,a,i); return e === -1 ? t.length : e + 1; }
+    let j = i;
+    while (j < t.length && !/[ \t\r\n,}\]]/.test(t[j]) && a[j] !== 'c') j++;
+    return j;
+  }
+
+  function rootObject(t){
+    const a = sig(t);
+    let i = t.indexOf('{');
+    while (i !== -1 && a[i] === 'c') i = t.indexOf('{', i + 1);
+    if (i === -1) return null;
+    return { open: i, close: matchBracket(t,a,i), a };
+  }
+
+  /* Entrées de niveau 1 d'un objet (clés, plages). Les commentaires sont gardés
+     mais jamais interprétés comme du JSON. */
+  function entries(t, a, openIdx){
+    const close = matchBracket(t,a,openIdx);
+    const out = [];
+    if (close === -1) throw new Error("Accolade fermante introuvable — fichier invalide.");
+    let i = openIdx + 1;
+    while (i < close){
+      if (!structural(t,a,i)){ i++; continue; }
+      if (a[i] !== 'S'){ i++; continue; }
+      const keyEnd = stringEnd(t,a,i);
+      let k = keyEnd; while (k < t.length && WS.test(t[k])) k++;
+      if (t[k] !== ':'){ i = keyEnd; continue; }
+      k++; while (k < t.length && WS.test(t[k])) k++;
+      const valEnd = valueEnd(t,a,k);
+      out.push({ key: JSON.parse(t.slice(i,keyEnd)), keyStart:i, keyEnd, valStart:k, valEnd });
+      i = valEnd;
+    }
+    return { list: out, close, open: openIdx };
+  }
+
+  const lineStart = (t,i)=> t.lastIndexOf('\n', i - 1) + 1;
+  function indentOf(t, idx){ return t.slice(lineStart(t,idx), idx).match(/^[ \t]*/)[0]; }
+  /* Indentation de l'accolade fermante ; '  ' si le fichier tient sur une ligne. */
+  function closeIndentOf(t, close){
+    const pre = t.slice(lineStart(t, close), close);
+    return /^[ \t]*$/.test(pre) ? pre : '  ';
+  }
+
+  /* Insère/replace une entrée dans un objet en préservant la mise en page voisine. */
+  function setEntry(t, a, openIdx, key, valueText, { insert = true } = {}){
+    const o = entries(t,a,openIdx);
+    const found = o.list.find(e => e.key === key);
+    if (found){
+      if (!insert) return { text: t, replaced: false };
+      return { text: t.slice(0,found.keyStart) + valueText.trimStart() + t.slice(found.valEnd), replaced: true };
+    }
+    if (!insert) return { text: t, replaced: false };
+    const closeIndent = closeIndentOf(t, o.close);
+    const keyIndent = o.list.length ? indentOf(t, o.list[0].keyStart) : closeIndent + '  ';
+    const block = keyIndent + valueText.trimStart();
+    if (!o.list.length){
+      const at = o.open + 1;
+      return { text: t.slice(0,at) + '\n' + block + '\n' + closeIndent + t.slice(at), replaced: false };
+    }
+    const last = o.list[o.list.length - 1];
+    let j = last.valEnd; while (j < o.close && (WS.test(t[j]) || a[j] === 'c')) j++;
+    if (t[j] === ','){   // virgule déjà en place -> on insère juste avant l'accollade
+      return { text: t.slice(0,o.close) + block + ',\n' + closeIndent + t.slice(o.close), replaced: false };
+    }
+    return { text: t.slice(0,last.valEnd) + ',\n' + block + '\n' + closeIndent + t.slice(last.valEnd), replaced: false };
+  }
+
+  /* Retire une entrée (clé + valeur + virgule/fin de ligne orphelines). */
+  function delEntry(t, a, openIdx, key){
+    const o = entries(t,a,openIdx);
+    const f = o.list.find(e => e.key === key);
+    if (!f) return t;
+    let start = lineStart(t, f.keyStart);
+    let end = f.valEnd;
+    let j = end; while (j < t.length && WS.test(t[j]) && t[j] !== '\n') j++;
+    if (t[j] === ','){ end = j + 1; j++; }
+    if (t[end] === '\n') end++;
+    if (t[end] === '\r') end++;
+    while (end < t.length && (t[end] === ' ' || t[end] === '\t')) end++;
+    if (t.slice(start,end).trim() === '') return t.slice(0,start) + t.slice(end);
+    return t.slice(0,start) + t.slice(end);
+  }
+
+  function renderEntry(key, obj, indent){
+    const one = '"' + key + '": ' + JSON.stringify(obj, null, 2);
+    return one.split('\n').map((l,i)=> i === 0 ? indent + l : (l.trim() ? indent + l : l)).join('\n');
+  }
+  function renderValue(obj, indent){
+    return JSON.stringify(obj, null, 2).split('\n')
+      .map((l,i)=> i === 0 ? l : (l.trim() ? indent + l : l)).join('\n');
+  }
+
+  function normalizeBase(raw){
+    let s = String(raw || '').trim().replace(/\s+/g,'');
+    s = s.replace(/^https?\/\//i, m => m.replace('//','://'));       // http// -> http://
+    s = s.replace(/^([a-z]+):\/(?!\/)/i, '$1://');                   // http:/  -> http://
+    if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(s)){
+      s = (/^\d+(\.\d+){3}|^localhost|^127\./.test(s)) ? 'http://' + s : 'http://' + s;
+    }
+    s = s.replace(/\/+$/,'');
+    return s;
+  }
+
+  function joinsV1(base){ return /\/v\d+$/i.test(base); }
+
+  /* --- sonde : extraction des infos utiles, tous serveurs confondus --- */
+  function extractInfo({ base, modelsRaw, propsRaw, ollamaRaw, detailRaw, probeRaw, probeErr }){
+    const info = { endpoint: base + '/models', models: [], context: null, output: null,
+                   server: null, notes: [], modalities: null, modelPath: null, build: null };
+    let mv = null;
+    try { mv = JSON.parse(modelsRaw); } catch(e){}
+    if (Array.isArray(mv)) mv = { data: mv };
+    const arr = mv && (mv.data || mv.models || mv.object && mv.object === 'list' && mv.data);
+    if (Array.isArray(arr)){
+      info.models = arr.map(m => ({
+        id: m.id || m.name || m.model || '?',
+        owned_by: m.owned_by || m.ownedBy || null,
+        created: m.created || null,
+        context: firstNum(m, ['context_length','max_context_window','context','n_ctx','max_model_len','window']),
+        output: firstNum(m, ['max_output_tokens','max_tokens','n_predict']),
+        raw: m
+      }));
+      const arch = (mv.data && mv.data[0] && mv.data[0].architecture) || null;
+      if (arch && Array.isArray(arch.input_modalities) && arch.input_modalities.includes('image'))
+        info.modalities = { vision: true };
+      const p = (mv.meta && mv.meta) || (mv.data && mv.data[0] && mv.data[0].meta) || null;
+      if (p && p.n_ctx) info.context = p.n_ctx;
+      if (!info.context){                       // sinon : la plus grande fenêtre déclarée par un modèle
+        const cs = info.models.map(m => m.context).filter(Boolean);
+        if (cs.length) info.context = Math.max.apply(null, cs);
+      }
+    }
+    let pr = null;
+    try { pr = JSON.parse(propsRaw); } catch(e){}
+    if (pr && typeof pr === 'object'){
+      const d = pr.default_generation_settings || {};
+      const slot = pr.slot || {};
+      const skeys = Object.keys(slot).filter(k=>/_model$/.test(k));
+      info.build = pr.build || pr.build_info || null;
+      info.server = info.server || (pr.build && pr.build.includes('llama') ? 'llama.cpp' : 'llama.cpp?');
+      info.modelPath = d.model_path || (slot[skeys[0]] && slot[skeys[0]].path) || null;
+      info.context = info.context || d.n_ctx || firstNum(pr, ['n_ctx','total_slots']) || null;
+      const sm = skeys.map(k=>slot[k]).find(v=>v && (v.n_ctx || v.modalities)) || null;
+      if (sm){ if (!info.context && sm.n_ctx) info.context = sm.n_ctx; if (sm.modalities) info.modalities = sm.modalities; }
+      if (d.n_predict !== undefined && d.n_predict !== null) info.notes.push('n_predict serveur = ' + d.n_predict + (d.n_predict === -1 ? ' (sortie non plafonnée côté serveur)' : ''));
+      if (pr.chat_template){ info.chatTemplate = true; info.notes.push('/props expose un chat_template (' + String(pr.chat_template).length + ' car.)'); }
+      const tmpl = String(pr.chat_template || '');
+      if (/enable_thinking|reasoning_effort/.test(tmpl)) info.notes.push('le template lit enable_thinking / reasoning_effort → utile dans body');
+    }
+    let ol = null;
+    try { ol = JSON.parse(ollamaRaw); } catch(e){}
+    if (ol && Array.isArray(ol.models) && !info.models.length){
+      info.server = 'ollama';
+      info.models = ol.models.map(m => ({ id: m.name, owned_by: 'ollama', context: null, output: null, raw: m }));
+      info.notes.push('Ollama détecté via /api/tags — /api/show donne context_length');
+    }
+    let dt = null;
+    try { dt = JSON.parse(detailRaw); } catch(e){}
+    if (dt && typeof dt === 'object'){
+      const c = firstNum(dt, ['context_length','max_context_window','n_ctx','max_model_len']) ||
+                (dt.model_info ? Object.keys(dt.model_info).map(k=>firstNum(dt.model_info, [], k)).find(Boolean) : null);
+      if (c) info.context = info.context || c;
+    }
+    const src = probeErr || probeRaw || '';
+    const m = String(src).match(/exceeds the context \(?(\d{3,})/i) ||
+              String(src).match(/context[^0-9]{0,24}(\d{4,})/i) ||
+              String(src).match(/n_ctx\D{0,6}(\d{3,})/i);
+    if (m){ info.probed = Number(m[1]); info.notes.push('sonde max_tokens → fenêtre ' + info.probed + ' (message du serveur)'); }
+    return info;
+  }
+  /* Modalités renvoyées soit en tableau (["text","image"]), soit en objet
+     ({"vision":true}) selon le serveur : on normalise avant de tester. */
+  function hasVision(m){
+    if (!m) return false;
+    const list = Array.isArray(m) ? m
+               : (typeof m === 'object' ? Object.keys(m).filter(k => m[k]) : [String(m)]);
+    const s = list.join(',').toLowerCase();
+    return s.includes('image') || s.includes('vision');
+  }
+  function firstNum(o, keys, prefix){
+    for (const k of (keys || [])){ const v = o[k]; if (typeof v === 'number' && v > 0) return v; }
+    if (prefix){ for (const k of Object.keys(o)) if (k.startsWith(prefix) && typeof o[k] === 'number' && o[k] > 0) return o[k]; }
+    return null;
+  }
+
+  /* --- écriture du fichier opencode --- */
+  const DEFAULT_SCHEMA = 'https://opencode.ai/config.json';
+
+  function buildProvider(o){
+    if (o.body !== null && o.body !== undefined && (typeof o.body !== 'object' || Array.isArray(o.body)))
+      throw new Error('body doit être un objet JSON (ex. {"reasoning_effort":"high"}).');
+    if (o.variants !== null && o.variants !== undefined && !Array.isArray(o.variants))
+      throw new Error('variants doit être un tableau JSON (ex. [{"id":"low","body":{...}}]).');
+    const settings = { baseURL: o.baseURL, apiKey: o.apiKey || 'none' };
+    if (o.headerTimeout) settings.headerTimeout = o.headerTimeout;
+    if (o.chunkTimeout) settings.chunkTimeout = o.chunkTimeout;
+    if (o.headers && Object.keys(o.headers).length) settings.headers = o.headers;
+    const model = {};
+    if (o.modelID && o.modelID !== o.alias) model.modelID = o.modelID;
+    if (o.modelName) model.name = o.modelName;
+    model.capabilities = { tools: !!o.tools, input: o.image ? ['text','image'] : ['text'], output: ['text'] };
+    if (o.reasoningField) model.compatibility = { reasoningField: o.reasoningField };
+    if (o.body && Object.keys(o.body).length) model.body = o.body;
+    if (Array.isArray(o.variants) && o.variants.length) model.variants = o.variants;
+    model.limit = {};
+    if (o.context) model.limit.context = o.context;
+    if (o.output) model.limit.output = o.output;
+    if (!Object.keys(model.limit).length) delete model.limit;
+    return { name: o.providerName || o.providerId, package: o.package, settings, models: { [o.alias]: model } };
+  }
+
+  function applyOpencodeRaw(text, o){
+    const warnings = [], dropped = [];
+    const mode = o.mode || 'add';
+    const ro = rootObject(text || '');
+    if (!ro) throw new Error("Aucun objet JSON '{' trouvé dans le fichier.");
+    const a = ro.a;
+    let root = entries(text, a, ro.open);
+    const prov = root.list.find(e => e.key === 'providers');
+    const providerObj = buildProvider(o);
+    const modelRef = o.setAsModel && o.providerId && o.alias ? (o.providerId + '/' + o.alias) : null;
+
+    /* --- remise à zéro : on rebâtit un document minimal --- */
+    if (mode === 'reset'){
+      const keep = (o.keepOther ? root.list.filter(e => e.key !== 'providers' && e.key !== 'model' && e.key !== '$schema') : []);
+      const droppedKeys = root.list.filter(e => !keep.includes(e) && e.key !== '$schema' && e.key !== 'model').map(e => e.key);
+      const oldP = prov ? entries(text, a, prov.valStart).list.map(e=>e.key) : [];
+      const lines = ['{'];
+      lines.push('  "$schema": ' + JSON.stringify((text.match(/"\$schema"\s*:\s*(".*?")/) || [,'"' + DEFAULT_SCHEMA + '"'])[1].replace(/^"|"$/g,'')) + ',');
+      if (modelRef) lines.push('  "model": ' + JSON.stringify(modelRef) + ',');
+      lines.push('  "providers": {');
+      lines.push(renderEntry(o.providerId, providerObj, '    '));
+      lines.push(keep.length ? '  },' : '  }');
+      keep.forEach((e,i)=>{
+        const raw = text.slice(e.keyStart, e.valEnd);
+        lines.push(raw + (i < keep.length - 1 ? ',' : ''));
+      });
+      lines.push('}');
+      droppedKeys.forEach(k => dropped.push(k));
+      if (oldP.length) warnings.push('Fournisseurs retirés par la remise à zéro : ' + oldP.join(', '));
+      if (dropped.length) warnings.push('Autres clés retirées : ' + dropped.join(', '));
+      return finish(lines.join('\n') + '\n', warnings, dropped, modelRef, text, o);
+    }
+
+    let out = text;
+    let A = a;
+
+    /* --- fournisseurs --- */
+    if (!prov){
+      const t = rootObject(out); A = t.a;
+      const r = entries(out, A, t.open);
+      const anchor = r.list.length ? r.list[r.list.length-1].valEnd : t.open + 1;
+      const insertAt = r.list.length ? anchor : t.open + 1;
+      const block = (r.list.length ? ',' : '') + '\n  "providers": {\n' +
+        renderEntry(o.providerId, providerObj, '    ') + '\n  }';
+      out = out.slice(0, insertAt) + block + out.slice(insertAt);
+      warnings.push("Le fichier n'avait pas de bloc providers : il a été créé.");
+    } else {
+      const po = entries(out, A, prov.valStart);
+      const existing = po.list.map(e => e.key);
+      if (mode === 'replace'){
+        const newBlock = '{\n' + renderEntry(o.providerId, providerObj, '    ') + '\n' + closeIndentOf(out, po.close) + '}';
+        out = out.slice(0, prov.valStart) + newBlock + out.slice(prov.valEnd);
+        existing.filter(k => k !== o.providerId).forEach(k => dropped.push('providers.' + k));
+        if (existing.length) warnings.push('Bloc providers remplacé — fournisseurs retirés : ' + existing.join(', '));
+      } else {
+        if (existing.includes(o.providerId)){
+          if (!o.overwrite){
+            throw new Error('Le fournisseur « ' + o.providerId + ' » existe déjà. Coche « écraser » pour le remplacer, ou change sa clé.');
+          }
+          const f = po.list.find(e => e.key === o.providerId);
+          const newBlock = renderEntry(o.providerId, providerObj, indentOf(out, f.keyStart));
+          out = out.slice(0, f.keyStart) + newBlock + out.slice(f.valEnd);
+          warnings.push('Fournisseur « ' + o.providerId + ' » écrasé.');
+        } else {
+          const t2 = rootObject(out); A = t2.a;
+          const provNow = entries(out, A, t2.open).list.find(e => e.key === 'providers');
+          const ind = indentOf(out, provNow.keyStart);
+          const ins = setEntry(out, A, provNow.valStart, o.providerId,
+            renderEntry(o.providerId, providerObj, ind + '  '));
+          out = ins.text;
+        }
+      }
+    }
+
+    /* --- model par défaut --- */
+    const t3 = rootObject(out); A = t3.a;
+    const r3 = entries(out, A, t3.open);
+    const modelEntry = r3.list.find(e => e.key === 'model');
+    if (modelRef){
+      if (modelEntry){
+        out = out.slice(0, modelEntry.valStart) + JSON.stringify(modelRef) + out.slice(modelEntry.valEnd);
+      } else {
+        const ins = setEntry(out, A, t3.open, 'model', '"model": ' + JSON.stringify(modelRef));
+        out = ins.text;
+      }
+      warnings.push('model = ' + modelRef);
+    } else if (modelEntry){
+      const ref = JSON.parse(out.slice(modelEntry.valStart, modelEntry.valEnd));
+      const provKey = String(ref).split('/')[0];
+      const after = rootObject(out);
+      const pv = entries(out, after.a, after.open).list.find(e => e.key === 'providers');
+      const keys = pv ? entries(out, after.a, pv.valStart).list.map(e=>e.key) : [];
+      if (!keys.includes(provKey)){
+        out = delEntry(out, after.a, after.open, 'model');
+        warnings.push('model référençait « ' + provKey + ' », fournisseur absent après écriture → clé model supprimée (ou coche « modèle par défaut »).');
+      }
+    }
+
+    return finish(out, warnings, dropped, modelRef, text, o);
+  }
+
+  /* Le fichier garde ses fins de ligne d'origine (CRLF Windows / LF). */
+  function applyOpencode(text, o){
+    const s = String(text == null ? '' : text);
+    const crlf = (s.match(/\r\n/g) || []).length > 0;
+    const res = applyOpencodeRaw(s.replace(/\r\n/g, '\n').replace(/\r/g, '\n'), o);
+    if (crlf) res.text = res.text.replace(/\n/g, '\r\n');
+    return res;
+  }
+
+  function finish(out, warnings, dropped, modelRef, orig, o){
+    const v = validate(out);
+    if (!v.ok){
+      let where = '';
+      const m = /position (\d+)/.exec(v.error);
+      if (m){ const p = +m[1]; where = ' — extrait : ' + JSON.stringify(out.slice(Math.max(0,p-60), p+30)); }
+      throw new Error('Résultat invalide (' + v.error + ')' + where + '. Rien n\'a été écrit.');
+    }
+    const stats = diffStats(orig, out);
+    return { text: out, warnings, dropped, stats, modelRef };
+  }
+
+  function validate(text){
+    try {
+      const a = sig(text);
+      let s = '';
+      for (let i = 0; i < text.length; i++) s += a[i] === 'c' ? ' ' : text[i];
+      s = s.replace(/,(\s*[}\]])/g, '$1');
+      JSON.parse(s);
+      return { ok: true };
+    } catch (e){ return { ok: false, error: e.message }; }
+  }
+
+  function stripComments(text){
+    const a = sig(text); let s = '';
+    for (let i = 0; i < text.length; i++) s += a[i] === 'c' ? ' ' : text[i];
+    return s;
+  }
+
+  function diffStats(before, after){
+    const k = t => { try { const ro = rootObject(t); return entries(t, ro.a, ro.open).list.find(e=>e.key==='providers')
+      ? entries(t, ro.a, entries(t, ro.a, ro.open).list.find(e=>e.key==='providers').valStart).list.map(e=>e.key) : []; } catch(e){ return []; } };
+    const b = k(before), n = k(after);
+    return { before: b, after: n, added: n.filter(x=>!b.includes(x)), removed: b.filter(x=>!n.includes(x)) };
+  }
+
+  function parseJsonField(label, txt, expect){
+    if (!txt || !txt.trim()) return expect === 'array' ? [] : null;
+    let v;
+    try { v = JSON.parse(txt); } catch (e){ throw new Error(label + ' : JSON invalide (' + e.message + ')'); }
+    if (expect === 'array' && !Array.isArray(v)) throw new Error(label + ' : un tableau JSON est attendu.');
+    if (expect === 'object' && (typeof v !== 'object' || Array.isArray(v))) throw new Error(label + ' : un objet JSON est attendu.');
+    return v || (expect === 'array' ? [] : null);
+  }
+
+  function slug(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''); }
+  function fmt(n){ return (n === null || n === undefined) ? '—' : Number(n).toLocaleString('fr-FR'); }
+
+  return { sig, entries, setEntry, delEntry, rootObject, normalizeBase, joinsV1, extractInfo, buildProvider, hasVision,
+           applyOpencode, validate, stripComments, diffStats, parseJsonField, renderEntry, slug, fmt, DEFAULT_SCHEMA };
+})();
+if (typeof module !== 'undefined') module.exports = CORE;
+</script>
+<script>
+/* =====================================================================
+   YCORE — lecture/écriture YAML à la ligne près (commentaires préservés),
+   pour Hermes (config.yaml) et dsh (cordis.patch.yml). Aucune dépendance.
+   ===================================================================== */
+const YCORE = (function(){
+  const split = t => String(t).replace(/\r\n?/g, '\n').split('\n');
+  const join = l => l.join('\n');
+  /* Le fichier garde ses fins de ligne (CRLF Windows / LF Unix). */
+  function readDoc(t){ const s = String(t == null ? '' : t);
+    const crlf = (s.match(/\r\n/g) || []).length > 0;
+    return { lines: s.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n'), crlf }; }
+  function writeDoc(lines, crlf){ return lines.join(crlf ? '\r\n' : '\n'); }
+  const IND = line => /^[ \t]*/.exec(line)[0].length;
+  const blank = l => /^[ \t]*$/.test(l);
+  const comment = l => /^[ \t]*#/.test(l);
+  const ignore = l => blank(l) || comment(l);
+  const KEY_RE = /^[ \t]*(?:-[ \t]+)?(["']?)([A-Za-z0-9_$.\/\@+-]+)\1:(?:[ \t]+(.*?))?[ \t]*$/;
+  const keyName = l => { const m = KEY_RE.exec(l); return m ? m[2] : null; };
+  const valueOf = l => { const m = KEY_RE.exec(l); return m ? (m[3] === undefined ? '' : m[3]) : null; };
+  const itemIndent = l => { const m = /^([ \t]*)-[ \t]/.exec(l); return m ? m[1].length : null; };
+
+  /* Scalaire YAML : laissé brut quand c'est sans risque, sinon doublé (JSON compatible). */
+  function q(v){
+    if (v === null || v === undefined) return '';
+    if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+    const s = String(v);
+    if (s === '') return '""';
+    const plain = /^[A-Za-z0-9_$][A-Za-z0-9 $._\/:@+*>()-]*$/.test(s)
+      && !/[ \t]#/.test(s) && !/:$/.test(s) && !/^(true|false|null|yes|no|on|off|~)$/i.test(s)
+      && !/^-/.test(s) && !/^\d+(\.\d+)?$/.test(s);
+    return plain ? s : JSON.stringify(s);
+  }
+  const qkey = s => /^[A-Za-z0-9_$][A-Za-z0-9 $._\/@+-]*$/.test(String(s)) ? String(s) : JSON.stringify(String(s));
+
+  function findKey(lines, name, indent, from, to){
+    from = from || 0; to = (to === undefined ? lines.length : to);
+    for (let i = from; i < to; i++){
+      if (ignore(lines[i])) continue;
+      if (indent !== null && indent !== undefined && IND(lines[i]) !== indent) continue;
+      if (keyName(lines[i]) === name) return i;
+    }
+    return -1;
+  }
+  /* Lignes du bloc sous une clé (exclusif, sans les blancs/commentaires de fin). */
+  function blockExtent(lines, keyIdx, keyIndent){
+    const ki = keyIndent === undefined || keyIndent === null ? IND(lines[keyIdx]) : keyIndent;
+    let end = keyIdx + 1;
+    for (let i = keyIdx + 1; i < lines.length; i++){
+      if (ignore(lines[i])) continue;
+      if (IND(lines[i]) > ki) end = i + 1; else break;
+    }
+    return { start: keyIdx + 1, end };
+  }
+  /* Entrées `- ...` d'une liste, avec leur plage. */
+  function listItems(lines, start, end){
+    let ind = null;
+    for (let i = start; i < end; i++){ const ii = itemIndent(lines[i]); if (ii !== null && (ind === null || ii < ind)) ind = ii; }
+    if (ind === null) return { indent: null, items: [] };
+    const heads = [];
+    for (let i = start; i < end; i++) if (itemIndent(lines[i]) === ind) heads.push(i);
+    const items = heads.map((h, k) => {
+      let e = (k + 1 < heads.length) ? heads[k + 1] : end;
+      while (e > h + 1 && (blank(lines[e-1]) || comment(lines[e-1]))) e--;
+      return { start: h, end: e, head: lines[h] };
+    });
+    return { indent: ind, items };
+  }
+  /* Clés `x:` de niveau 1 d'un mapping (pas les listes). */
+  function mapEntries(lines, start, end){
+    let ind = null;
+    for (let i = start; i < end; i++){ if (ignore(lines[i])) continue; if (ind === null) ind = IND(lines[i]); break; }
+    if (ind === null) return { indent: null, entries: [] };
+    const heads = [];
+    for (let i = start; i < end; i++) if (!ignore(lines[i]) && IND(lines[i]) === ind && keyName(lines[i]) !== null) heads.push(i);
+    const entries = heads.map((h, k) => {
+      let e = (k + 1 < heads.length) ? heads[k + 1] : end;
+      while (e > h + 1 && (blank(lines[e-1]) || comment(lines[e-1]))) e--;
+      return { key: keyName(lines[h]), start: h, end: e, head: lines[h] };
+    });
+    return { indent: ind, entries };
+  }
+  function itemField(lines, it, name){
+    for (let i = it.start; i < it.end; i++){
+      if (keyName(lines[i]) === name){ const v = valueOf(lines[i]); if (v !== null) return stripQuote(v); }
+    }
+    return null;
+  }
+  const stripQuote = s => /^"(.*)"$/.test(s) ? JSON.parse(s) : (/^'(.*)'$/.test(s) ? s.slice(1,-1) : s);
+
+  /* ---------- Hermes : custom_providers[] + model: ---------- */
+  function hermesEntryLines(o, ind){
+    const p = ' '.repeat(ind), f = ' '.repeat(ind + 2);
+    const L = [p + '- name: ' + q(o.name), f + 'base_url: ' + o.baseURL];
+    if (o.keyEnv) L.push(f + 'key_env: ' + q(o.keyEnv));
+    if (o.model) L.push(f + 'model: ' + q(o.model));
+    const ids = (o.models || []).filter(Boolean);
+    if (ids.length){ L.push(f + 'models:'); ids.forEach(id => L.push(f + '  ' + qkey(id) + ': {}')); }
+    if (o.discovered !== false) L.push(f + 'models_discovered: true');
+    return L;
+  }
+  function setModelBlock(lines, o, warn){
+    const want = [['default', o.model], ['provider', 'custom'], ['base_url', o.baseURL],
+                  ['api_key', o.keyEnv ? '${' + o.keyEnv + '}' : (o.apiKey || null)],
+                  ['context_length', o.context]];
+    let mi = findKey(lines, 'model', 0);
+    if (mi === -1){
+      lines.push('model:');
+      want.forEach(([k,v]) => { if (v !== null && v !== undefined && v !== '') lines.push('  ' + k + ': ' + q(v)); });
+      warn.push('Bloc model: absent → créé (le fournisseur devient actif).');
+      return;
+    }
+    if ((valueOf(lines[mi]) || '') !== ''){        // `model: une-chaine` -> on convertit en bloc
+      const ind = IND(lines[mi]);
+      lines.splice(mi, 1, ' '.repeat(ind) + 'model:');
+      warn.push('model: était une valeur simple → transformé en bloc.');
+    }
+    const b = blockExtent(lines, mi, 0);
+    for (const [k, v] of want){
+      if (v === null || v === undefined || v === '') continue;
+      const ki = findKey(lines, k, null, b.start, b.end);
+      if (ki !== -1){
+        lines[ki] = ' '.repeat(IND(lines[ki])) + k + ': ' + q(v);
+      } else {
+        const ins = b.end;
+        lines.splice(ins, 0, ' '.repeat(Math.max(2, IND(lines[mi]) + 2)) + k + ': ' + q(v));
+        b.end++;
+      }
+    }
+  }
+  function applyHermes(text, o){
+    const warnings = [], dropped = [];
+    if (!o.name) throw new Error('Hermes : le nom du fournisseur est requis.');
+    const doc = readDoc(text); const lines = doc.lines;
+    let ki = findKey(lines, 'custom_providers', 0);
+    if (ki !== -1 && (valueOf(lines[ki]) || '') !== ''){        // `custom_providers: []`
+      lines.splice(ki, 1, 'custom_providers:');
+    }
+    if (ki === -1){
+      if (o.mode === 'reset'){ lines.length = 0; lines.push('custom_providers:'); }
+      else { lines.push('custom_providers:'); }
+      hermesEntryLines(o, 2).forEach(l => lines.push(l));
+      warnings.push('Bloc custom_providers: absent → créé.');
+    } else {
+      const b = blockExtent(lines, ki, 0);
+      const { indent, items } = listItems(lines, b.start, b.end);
+      const ind = indent === null ? 2 : indent;
+      const entry = hermesEntryLines(o, ind);
+      const hit = items.find(it => itemField(lines, it, 'name') === o.name);
+      if (o.mode === 'add'){
+        if (hit){
+          lines.splice(hit.start, hit.end - hit.start, ...entry);
+          warnings.push('Fournisseur Hermes « ' + o.name + ' » mis à jour.');
+        } else {
+          lines.splice(b.end, 0, ...entry);
+          warnings.push('Fournisseur Hermes « ' + o.name + ' » ajouté (' + (items.length + 1) + ' au total).');
+        }
+      } else {
+        items.filter(it => itemField(lines, it, 'name') !== o.name)
+             .forEach(it => dropped.push(itemField(lines, it, 'name') || '(sans nom)'));
+        lines.splice(b.start, b.end - b.start, ...entry);
+        if (dropped.length) warnings.push('Fournisseurs Hermes retirés : ' + dropped.join(', '));
+      }
+    }
+    if (o.setActive) setModelBlock(lines, o, warnings);
+    if (o.mode === 'reset'){
+      const keep = new Set(['custom_providers', 'model']);
+      const ro = lines.filter((l,i) => true);
+      const out = [];
+      let dropping = false;
+      for (let i = 0; i < lines.length; i++){
+        const l = lines[i];
+        if (!ignore(l) && IND(l) === 0){
+          const k = keyName(l);
+          dropping = !(keep.has(k) || k === null);
+        }
+        if (ignore(l)){ if (!dropping) out.push(l); continue; }
+        if (!dropping) out.push(l);
+      }
+      const removed = unique(lines.filter((l,i)=>IND(l)===0 && !ignore(l) && keyName(l) && !keep.has(keyName(l))).map(keyName));
+      if (removed.length) warnings.push('Remise à zéro Hermes : clés supprimées → ' + removed.join(', '));
+      return finishYaml(writeDoc(out, doc.crlf), 'hermes', o, warnings, dropped, text);
+    }
+    return finishYaml(writeDoc(lines, doc.crlf), 'hermes', o, warnings, dropped, text);
+  }
+
+  /* ---------- dsh : providers sous `- id: llm-pi-ai` ---------- */
+  function dshProviderLines(o, ind){
+    const p = ' '.repeat(ind), f = ' '.repeat(ind + 2), g = ' '.repeat(ind + 4),
+          h = ' '.repeat(ind + 6), j = ' '.repeat(ind + 8);
+    const L = [p + qkey(o.id) + ':'];
+    if (o.displayName) L.push(f + 'displayName: ' + q(o.displayName));
+    if (o.apiKeyEnv) L.push(f + 'apiKeyEnv: ' + q(o.apiKeyEnv));
+    L.push(f + 'api: openai-completions');
+    L.push(f + 'baseURL: ' + o.baseURL);
+    if (o.streamIdleTimeoutMs) L.push(f + 'streamIdleTimeoutMs: ' + o.streamIdleTimeoutMs);
+    if (o.defaultMaxTokens) L.push(f + 'defaultMaxTokens: ' + o.defaultMaxTokens);
+    if (o.thinking){
+      L.push(f + 'compat:', g + 'thinkingFormat: chat-template', g + 'chatTemplateKwargs:',
+             h + 'enable_thinking: { $var: thinking.enabled }',
+             h + 'reasoning_effort: { $var: thinking.effort, omitWhenOff: true }');
+      if (o.preserveThinking) L.push(h + 'preserve_thinking: true');
+    }
+    const models = o.models && o.models.length ? o.models : [{ id: o.modelID || o.id }];
+    L.push(f + 'models:');
+    models.forEach(m => {
+      L.push(g + '- id: ' + q(m.id));
+      if (m.name) L.push(h + 'name: ' + q(m.name));
+      if (m.contextWindow) L.push(h + 'contextWindow: ' + m.contextWindow);
+      if (m.maxTokens) L.push(h + 'maxTokens: ' + m.maxTokens);
+      L.push(h + 'input: [' + (m.image ? 'text, image' : 'text') + ']');
+      const eff = m.reasoningEfforts;
+      if (eff && Object.keys(eff).length){
+        L.push(h + 'reasoningEfforts:');
+        Object.keys(eff).forEach(k => L.push(j + qkey(k) + ': ' + q(eff[k])));
+      }
+    });
+    return L;
+  }
+  function findEntry(lines, id){
+    for (let i = 0; i < lines.length; i++){
+      if (itemIndent(lines[i]) === 0 && keyName(lines[i]) === 'id' && stripQuote(valueOf(lines[i]) || '') === id){
+        let e = i + 1;
+        for (let k = i + 1; k < lines.length; k++){
+          if (ignore(lines[k])) continue;
+          if (itemIndent(lines[k]) === 0) break;
+          e = k + 1;
+        }
+        while (e > i + 1 && (blank(lines[e-1]) || comment(lines[e-1]))) e--;
+        return { start: i, end: e };
+      }
+    }
+    return null;
+  }
+  /* Fixe des clés directement sous `config:` d'une entrée de liste. */
+  function setConfigFields(lines, entry, values, warn){
+    let ci = findKey(lines, 'config', IND(lines[entry.start]) + 2, entry.start, entry.end);
+    if (ci === -1){
+      const ind = IND(lines[entry.start]) + 2;
+      const ins = [' '.repeat(ind) + 'config:'].concat(values.filter(([k,v]) => v !== null && v !== undefined && v !== '')
+        .map(([k,v]) => ' '.repeat(ind + 2) + k + ': ' + q(v)));
+      lines.splice(entry.start + 1, 0, ...ins);
+      return;
+    }
+    if ((valueOf(lines[ci]) || '') !== '') lines.splice(ci, 1, ' '.repeat(IND(lines[ci])) + 'config:');
+    const cb = blockExtent(lines, ci, IND(lines[ci]));
+    const bind = IND(lines[ci]) + 2;
+    values.forEach(([k, val]) => {
+      if (val === null || val === undefined || val === '') return;
+      const ki = findKey(lines, k, null, cb.start, cb.end);
+      if (ki !== -1 && ki < cb.end) lines[ki] = ' '.repeat(IND(lines[ki])) + k + ': ' + q(val);
+      else { lines.splice(cb.end, 0, ' '.repeat(bind) + k + ': ' + q(val)); cb.end++; }
+    });
+  }
+
+  function applyDsh(text, o){
+    const warnings = [], dropped = [];
+    if (!o.id) throw new Error('dsh : la clé du fournisseur est requise.');
+    const doc = readDoc(text); let lines = doc.lines;
+    let entry = findEntry(lines, o.entryId || 'llm-pi-ai');
+    if (!entry){
+      if (o.mode !== 'add' || true){
+        lines.push('- id: ' + (o.entryId || 'llm-pi-ai'), '  config:', '    providers:');
+        dshProviderLines(o, 6).forEach(l => lines.push(l));
+        warnings.push('Entrée « ' + (o.entryId || 'llm-pi-ai') + ' » absente → créée.');
+      }
+    } else {
+      let ci = findKey(lines, 'config', IND(lines[entry.start]) + 2, entry.start, entry.end);
+      if (ci === -1){
+        lines.splice(entry.start + 1, 0, '  config:', '    providers:');
+        dshProviderLines(o, 6).forEach(l => lines.push(l));
+        warnings.push('Bloc config: absent → créé avec ce fournisseur.');
+      } else {
+        let pi = findKey(lines, 'providers', IND(lines[ci]) + 2, ci, entry.end);
+        if (pi === -1){
+          const pb = blockExtent(lines, ci, IND(lines[ci]));
+          lines.splice(pb.end, 0, ' '.repeat(IND(lines[ci]) + 2) + 'providers:');
+          dshProviderLines(o, IND(lines[ci]) + 4).forEach(l => lines.push(l));
+          warnings.push('Bloc providers: absent → créé.');
+        } else {
+          const pind = IND(lines[pi]);
+          const b = blockExtent(lines, pi, pind);
+          const me = mapEntries(lines, b.start, b.end);
+          const ind = me.indent === null ? pind + 2 : me.indent;
+          const block = dshProviderLines(o, ind);
+          const hit = me.entries.find(e => e.key === o.id);
+          if (o.mode === 'add'){
+            if (hit){
+              lines.splice(hit.start, hit.end - hit.start, ...block);
+              warnings.push('Fournisseur dsh « ' + o.id + ' » mis à jour.');
+            } else {
+              lines.splice(b.end, 0, ...block);
+              warnings.push('Fournisseur dsh « ' + o.id + ' » ajouté (' + (me.entries.length + 1) + ' au total).');
+            }
+          } else {
+            me.entries.filter(e => e.key !== o.id).forEach(e => dropped.push(e.key));
+            lines.splice(b.start, b.end - b.start, ...block);
+            if (dropped.length) warnings.push('Fournisseurs dsh retirés : ' + dropped.join(', '));
+          }
+        }
+      }
+    }
+    if (o.setActive){
+      const ae = findEntry(lines, 'agent-default-model') || { start: lines.length - 1, end: lines.length };
+      if (!findEntry(lines, 'agent-default-model')){
+        lines.push('- id: agent-default-model', '  config:', '    provider: ' + q(o.id),
+                   '    model: ' + q(o.modelID || (o.models && o.models[0] && o.models[0].id) || o.id));
+        if (o.reasoningEffort) lines.push('    reasoningEffort: ' + q(o.reasoningEffort));
+        warnings.push('Entrée agent-default-model créée.');
+      } else {
+        setConfigFields(lines, ae, [['provider', o.id],
+          ['model', o.modelID || (o.models && o.models[0] && o.models[0].id) || o.id],
+          ['reasoningEffort', o.reasoningEffort]], warnings);
+        warnings.push('agent-default-model → ' + o.id + '/' + (o.modelID || (o.models && o.models[0] && o.models[0].id) || o.id));
+      }
+    }
+    if (o.mode === 'reset'){
+      const keepIds = new Set([o.entryId || 'llm-pi-ai', 'agent-default-model']);
+      const out = [];
+      let i = 0, keep = true;
+      const removed = [];
+      while (i < lines.length){
+        const l = lines[i];
+        if (!ignore(l) && itemIndent(l) === 0){
+          const id = stripQuote(valueOf(l) || '');
+          keep = keepIds.has(id);
+          if (!keep) removed.push(id);
+        }
+        if (ignore(l)){ if (keep) out.push(l); i++; continue; }
+        if (keep) out.push(l);
+        i++;
+      }
+      if (removed.length) warnings.push('Remise à zéro dsh : entrées retirées → ' + removed.join(', '));
+      return finishYaml(writeDoc(out, doc.crlf), 'dsh', o, warnings, dropped, text);
+    }
+    return finishYaml(writeDoc(lines, doc.crlf), 'dsh', o, warnings, dropped, text);
+  }
+
+  /* ---------- .env ---------- */
+  function envUpsert(text, name, value){
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) throw new Error('Nom de variable invalide : ' + name);
+    const doc = readDoc(text); const lines = doc.lines;
+    const re = new RegExp('^[ \\t]*(export[ \\t]+)?' + name + '=');
+    let found = -1;
+    for (let i = 0; i < lines.length; i++) if (re.test(lines[i])) { found = i; break; }
+    if (found >= 0){ lines[found] = name + '=' + value; return writeDoc(lines, doc.crlf); }
+    if (lines.length && lines[lines.length-1] !== '') lines.push('');
+    lines.push(name + '=' + value);
+    if (lines[lines.length-1] !== '') lines.push('');
+    return writeDoc(lines, doc.crlf);
+  }
+  function envFacts(text){
+    const names = [];
+    readDoc(text).lines.forEach(l => { const m = /^[ \t]*(?:export[ \t]+)?([A-Za-z_][A-Za-z0-9_]*)=/.exec(l); if (m) names.push(m[1]); });
+    return { names };
+  }
+
+  /* ---------- lectures (détection + réaprès-écriture) ---------- */
+  function hermesFacts(text){
+    const lines = readDoc(text).lines;
+    const out = { providers: [], active: null };
+    const ki = findKey(lines, 'custom_providers', 0);
+    if (ki !== -1){
+      const b = blockExtent(lines, ki, 0);
+      const { items } = listItems(lines, b.start, b.end);
+      out.providers = items.map(it => ({
+        name: itemField(lines, it, 'name'), base_url: itemField(lines, it, 'base_url'),
+        key_env: itemField(lines, it, 'key_env'), model: itemField(lines, it, 'model') }));
+    }
+    const mi = findKey(lines, 'model', 0);
+    if (mi !== -1){
+      const v = valueOf(lines[mi]) || '';
+      if (v !== '') out.active = { default: stripQuote(v) };
+      else { const b = blockExtent(lines, mi, 0); out.active = {};
+        ['default','provider','base_url','api_key','context_length','api_mode'].forEach(k => {
+          const ki2 = findKey(lines, k, null, b.start, b.end);
+          if (ki2 !== -1) out.active[k] = stripQuote(valueOf(lines[ki2]) || '');
+        }); }
+    }
+    return out;
+  }
+  function dshFacts(text){
+    const lines = readDoc(text).lines;
+    const out = { entry: null, providers: [], defaultModel: null, entries: [] };
+    for (let i = 0; i < lines.length; i++){
+      if (itemIndent(lines[i]) === 0 && keyName(lines[i]) === 'id') out.entries.push(stripQuote(valueOf(lines[i]) || ''));
+    }
+    const e = findEntry(lines, 'llm-pi-ai');
+    if (!e) return out;
+    out.entry = 'llm-pi-ai';
+    const ci = findKey(lines, 'config', 2, e.start, e.end);
+    if (ci !== -1){
+      const cb = blockExtent(lines, ci, IND(lines[ci]));
+      const pi = findKey(lines, 'providers', IND(lines[ci]) + 2, ci, e.end);
+      if (pi !== -1){
+        const b = blockExtent(lines, pi, IND(lines[pi]));
+        const me = mapEntries(lines, b.start, b.end);
+        out.providers = me.entries.map(en => {
+          const it = { start: en.start, end: en.end };
+          return { id: en.key, baseURL: itemField(lines, it, 'baseURL'), apiKeyEnv: itemField(lines, it, 'apiKeyEnv'),
+                   api: itemField(lines, it, 'api'),
+                   models: listItems(lines, en.start, en.end).items.map(m => itemField(lines, m, 'id')).filter(Boolean) };
+        });
+      }
+    }
+    const ad = findEntry(lines, 'agent-default-model');
+    if (ad){
+      const ci2 = findKey(lines, 'config', 2, ad.start, ad.end);
+      if (ci2 !== -1){
+        const cb = blockExtent(lines, ci2, IND(lines[ci2]));
+        out.defaultModel = {};
+        ['provider','model','reasoningEffort'].forEach(k => {
+          const ki2 = findKey(lines, k, null, cb.start, cb.end);
+          if (ki2 !== -1) out.defaultModel[k] = stripQuote(valueOf(lines[ki2]) || '');
+        });
+      }
+    }
+    return out;
+  }
+  function unique(a){ return a.filter((x,i)=>a.indexOf(x)===i); }
+
+  /* Vérifie que l'écriture a bien produit ce qu'on voulait. */
+  function finishYaml(out, kind, o, warnings, dropped, orig){
+    const f = kind === 'hermes' ? hermesFacts(out) : dshFacts(out);
+    const mine = kind === 'hermes'
+      ? f.providers.find(p => p.name === o.name)
+      : f.providers.find(p => p.id === o.id);
+    if (!mine) throw new Error('Contrôle interne : le fournisseur « ' + (o.name || o.id) + ' » absent du YAML produit. Aucune écriture effectuée.');
+    const wantUrl = o.baseURL.replace(/\/+$/,''), gotUrl = String(mine.base_url || mine.baseURL || '').replace(/\/+$/,'');
+    if (gotUrl !== wantUrl) throw new Error('Contrôle interne : baseURL attendu « ' + wantUrl + ' », obtenu « ' + gotUrl + ' ». Aucune écriture effectuée.');
+    if (kind === 'hermes' && o.setActive && (!f.active || stripQuote(String(f.active.base_url||'').replace(/\/+$/,'')) !== wantUrl))
+      warnings.push('Attention : le bloc model: n\'a pas pu être pointé sur ce fournisseur.');
+    if (kind === 'dsh' && o.setActive && (!f.defaultModel || f.defaultModel.provider !== o.id))
+      warnings.push('Attention : agent-default-model n\'a pas pu être pointé sur ce fournisseur.');
+    return { text: out, warnings, dropped, facts: f };
+  }
+
+  return { split, join, IND, findKey, blockExtent, listItems, mapEntries, itemField, q, qkey, stripQuote,
+           applyHermes, applyDsh, hermesEntryLines, dshProviderLines, envUpsert, envFacts,
+           hermesFacts, dshFacts, finishYaml, readDoc, writeDoc };
+})();
+if (typeof module !== 'undefined') module.exports = YCORE;
+</script>
+<script>
+/* =====================================================================
+   TARGETS — définition des harnais, détection des fichiers (File System
+   Access), lectures résumées, écriture. Testable avec un faux handle.
+   ===================================================================== */
+const TARGETS = (function(){
+  const HARNESS = [
+    { id:'opencode', label:'opencode (V2)', format:'jsonc', color:'#f7c948',
+      config:['.config/opencode/opencode.jsonc', '.config/opencode/opencode.json'],
+      env:null,
+      note:'bloc providers (pluriel) + package openai-compatible' },
+    { id:'hermes', label:'Hermes Agent', format:'yaml', flavor:'hermes', color:'#c792ea',
+      config:['.hermes/config.yaml', '.hermes/config.yml'],
+      env:'.hermes/.env', envPrefix:'HERMES_CUSTOM_',
+      note:'custom_providers[] + bloc model: pour le fournisseur actif' },
+    { id:'dsh', label:'dsh (DeepSeek Harness)', format:'yaml', flavor:'dsh', color:'#7fdbca',
+      config:['.dsh/cordis.patch.yml'],
+      env:'.dsh/.env', envPrefix:'',
+      note:'providers sous l’entrée llm-pi-ai + agent-default-model' },
+  ];
+
+  const safe = async fn => { try { return await fn(); } catch (e){ return null; } };
+
+  async function fileHandleAt(root, path){
+    const parts = String(path).split('/');
+    let dir = root;
+    for (let i = 0; i < parts.length - 1; i++) dir = await dir.getDirectoryHandle(parts[i]);
+    return await dir.getFileHandle(parts[parts.length - 1]);
+  }
+  async function readHandle(h){
+    const f = await h.getFile();
+    return { name: f.name, size: f.size, lastModified: f.lastModified, text: await f.text() };
+  }
+  async function writeHandle(h, text){
+    const w = await h.createWritable({ keepExistingData: false });
+    await w.write(text); await w.close();
+    return true;
+  }
+
+  /* Scan de secours : noms de fichiers connus, profondeur bornée. */
+  const SKIP = new Set(['node_modules','AppData','Library','Windows','venv','.git','.cache','cache','dist','build','__pycache__']);
+  async function deepFind(root, names, budget){
+    const found = new Map();
+    const queue = [[root, '', 0]];
+    let seen = 0;
+    while (queue.length && seen < (budget || 4000)){
+      const [dir, prefix, depth] = queue.shift();
+      for await (const [name, handle] of dir.entries()){
+        if (++seen > (budget || 4000)) break;
+        if (handle.kind === 'file' && names.includes(name.toLowerCase()) && !found.has(name.toLowerCase())){
+          found.set(name.toLowerCase(), { handle, path: prefix ? prefix + '/' + name : name });
+        } else if (handle.kind === 'directory' && depth < 3 && !SKIP.has(name)){
+          if (name.startsWith('.') && !['.config','.hermes','.dsh','.config/'].includes(name)) continue;
+          queue.push([handle, prefix ? prefix + '/' + name : name, depth + 1]);
+        }
+      }
+    }
+    return found;
+  }
+
+  async function detect(rootHandle, opts){
+    opts = opts || {};
+    const out = [];
+    for (const h of HARNESS){
+      let hit = null;
+      for (const p of h.config){
+        hit = await safe(async () => { const fh = await fileHandleAt(rootHandle, p); return Object.assign({ path: p, handle: fh }, await readHandle(fh)); });
+        if (hit) break;
+      }
+      if (!hit && opts.deep){
+        const names = h.config.map(p => p.split('/').pop().toLowerCase());
+        const map = await deepFind(rootHandle, names, opts.budget);
+        for (const p of h.config){
+          const f = map.get(p.split('/').pop().toLowerCase());
+          if (f){ hit = Object.assign({ path: f.path, handle: f.handle }, await readHandle(f.handle)); break; }
+        }
+      }
+      const env = h.env ? await safe(async () => {
+        const fh = await fileHandleAt(rootHandle, h.env);
+        return Object.assign({ path: h.env, handle: fh }, await readHandle(fh));
+      }) : null;
+      out.push({ id: h.id, label: h.label, format: h.format, flavor: h.flavor || h.id, color: h.color, note: h.note,
+                 envPrefix: h.envPrefix, envPath: h.env, found: !!hit, file: hit, env,
+                 summary: hit ? summarize(h.flavor || h.id, hit.text) : null });
+    }
+    return out;
+  }
+
+  /* Résumé lisible d’un fichier de config. */
+  function summarize(flavor, text){
+    try {
+      if (flavor === 'opencode'){
+        const ro = CORE.rootObject(text);
+        const root = CORE.entries(text, ro.a, ro.open);
+        const pv = root.list.find(e => e.key === 'providers');
+        const keys = pv ? CORE.entries(text, ro.a, pv.valStart).list.map(e => e.key) : [];
+        const m = root.list.find(e => e.key === 'model');
+        const active = m ? CORE.stripComments(text.slice(m.valStart, m.valEnd)).replace(/^"|"$/g, '') : null;
+        const urls = [];
+        if (pv) CORE.entries(text, ro.a, pv.valStart).list.forEach(e => {
+          const inner = CORE.entries(text, ro.a, e.valStart);
+          const s = inner.list.find(x => x.key === 'settings');
+          if (s){ const b = CORE.entries(text, ro.a, s.valStart).list.find(x => x.key === 'baseURL');
+            if (b) urls.push(CORE.stripComments(text.slice(b.valStart, b.valEnd)).replace(/^"|"$/g, '')); }
+        });
+        return { providers: keys.map((k, i) => ({ key: k, base: urls[i] || '' })), active,
+                 keys: root.list.map(e => e.key), modelKeys: ['model'] };
+      }
+      if (flavor === 'hermes'){
+        const f = YCORE.hermesFacts(text);
+        return { providers: f.providers.map(p => ({ key: p.name, base: p.base_url, env: p.key_env, model: p.model })),
+                 active: f.active ? ((f.active.default || '?') + (f.active.base_url ? ' @ ' + f.active.base_url : '')) : null,
+                 activeRef: f.active, keys: null };
+      }
+      const f = YCORE.dshFacts(text);
+      return { providers: f.providers.map(p => ({ key: p.id, base: p.baseURL, env: p.apiKeyEnv, models: p.models.length })),
+               active: f.defaultModel ? (f.defaultModel.provider + '/' + f.defaultModel.model) : null,
+               activeRef: f.defaultModel, entries: f.entries };
+    } catch (e){ return { error: e.message, providers: [], active: null }; }
+  }
+
+  /* Dispatch d’écriture + contrôles communs. */
+  function apply(flavor, text, o){
+    const warnings = [];
+    if (!/^https?:\/\/[^\s]+/i.test(o.baseURL)) throw new Error('Base URL invalide pour ‘' + o.baseURL + '’.');
+    if (!/\/v\d+$/i.test(o.baseURL)) warnings.push('La base ne finit pas par /v1 — le client appellera ' + o.baseURL + '/chat/completions tel quel.');
+    const r = flavor === 'opencode' ? CORE.applyOpencode(text, o)
+            : flavor === 'hermes'   ? YCORE.applyHermes(text, o)
+            :                        YCORE.applyDsh(text, o);
+    r.warnings = warnings.concat(r.warnings || []);
+    return r;
+  }
+
+  /* ---------- nommage par défaut ---------- */
+  function hostPort(base){
+    try { const u = new URL(base); return { host: u.hostname, port: u.port || (u.protocol === 'https:' ? '443' : '80') }; }
+    catch (e){ return { host: 'lan', port: '0' }; }
+  }
+  const slug = s => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  const upper = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+  function defaults(base, modelName, existingIds){
+    const { host, port } = hostPort(base);
+    const ipTail = /(\d+)$/.exec(host) ? RegExp.$1 : slug(host);
+    let id = 'lan-' + ipTail + '-' + port;
+    let n = 2;
+    while ((existingIds || []).includes(id)) id = 'lan-' + ipTail + '-' + port + '-' + (n++);
+    return { id, host, port, keyEnv: 'LAN_' + ipTail + '_' + port + '_API_KEY',
+             hermesKeyEnv: 'HERMES_CUSTOM_' + host.replace(/\./g, '_') + '_' + port + '_API_KEY',
+             name: host + ':' + port, model: modelName || '' };
+  }
+
+  /* ---------- clé d’environnement (.env) ---------- */
+  function envUpsert(text, name, value){ return YCORE.envUpsert(text, name, value); }
+  function envHas(text, name){ return YCORE.envFacts(text).names.includes(name); }
+
+  /* ---------- mémorisation du handle de dossier ---------- */
+  const DB = 'harnais-endpoint-config', STORE = 'handles', KEY = 'root';
+  function idb(){
+    return new Promise((res, rej) => {
+      const rq = indexedDB.open(DB, 1);
+      rq.onupgradeneeded = () => rq.result.createObjectStore(STORE);
+      rq.onsuccess = () => res(rq.result);
+      rq.onerror = () => rej(rq.error);
+    });
+  }
+  async function saveRoot(handle){
+    const db = await idb();
+    return new Promise((res, rej) => {
+      const tx = db.transaction(STORE, 'readwrite');
+      tx.objectStore(STORE).put(handle, KEY);
+      tx.oncomplete = () => res(true); tx.onerror = () => rej(tx.error);
+    });
+  }
+  async function loadRoot(){
+    try {
+      const db = await idb();
+      return await new Promise((res, rej) => {
+        const rq = db.transaction(STORE, 'readonly').objectStore(STORE).get(KEY);
+        rq.onsuccess = () => res(rq.result || null); rq.onerror = () => rej(rq.error);
+      });
+    } catch (e){ return null; }
+  }
+  async function permission(handle, mode){
+    if (!handle || !handle.queryPermission) return 'granted';
+    const q = { mode: mode || 'read' };
+    if (await handle.queryPermission(q) === 'granted') return 'granted';
+    if (handle.requestPermission && await handle.requestPermission(q) === 'granted') return 'granted';
+    return 'denied';
+  }
+
+  return { HARNESS, detect, summarize, apply, readHandle, writeHandle, fileHandleAt, deepFind,
+           defaults, slug, upper, hostPort, envUpsert, envHas, saveRoot, loadRoot, permission };
+})();
+if (typeof module !== 'undefined') module.exports = TARGETS;
+</script>
+<script>
+/* =====================================================================
+   I18N — interface en 8 langues (fr, en, de, es, it, pt, nl, pl)
+   Les libellés de champs reprennent les clés de configuration réelles
+   (baseURL, contextWindow, apiKeyEnv…) : ce sont les mêmes mots que dans
+   les fichiers écrits, donc ils ne sont pas traduits dans les fichiers.
+   Journal technique : en anglais, volontairement (voir docs/I18N.md).
+   ===================================================================== */
+const LANGS = [
+  ['fr', 'Français'], ['en', 'English'], ['de', 'Deutsch'], ['es', 'Español'],
+  ['it', 'Italiano'], ['pt', 'Português'], ['nl', 'Nederlands'], ['pl', 'Polski']
+];
+
+const I18N = {
+  fr: {
+    sub: 'Sonde une API OpenAI-compatible (<span class="mono">http://ip:port/v1</span>) sur le réseau, puis écrit le fournisseur dans les fichiers de configuration des harnais <b>détectés sur cette machine</b>. La sonde passe par le pont local : c’est ce qui évite le blocage CORS qui rendait la version <span class="mono">file://</span> inutilisable.',
+    docs: 'Documentation',
+    s1: 'Détection des harnais',
+    s1hint: 'Interface servie par <span class="mono">LLMBridge</span> (pont local sur <span class="mono">127.0.0.1</span>) : c’est lui qui lit et écrit les fichiers et qui interroge l’API — le navigateur ne peut ni l’un ni l’autre depuis une page <span class="mono">file://</span>. Les chemins par défaut de chaque harnais sont utilisés ; tu peux les remplacer dans « Chemins ».',
+    scan: 'Scanner mes fichiers de configuration',
+    rescan: 'Rescanner',
+    deep: 'Chercher aussi plus profond (si les fichiers sont hors des chemins par défaut)',
+    thHarness: 'Harnais',
+    thFile: 'Fichier détecté',
+    thState: 'État',
+    thProv: 'Fournisseurs déclarés',
+    thActive: 'Actif',
+    found: 'TROUVÉ',
+    absent: 'ABSENT',
+    openOther: 'Ouvrir un autre fichier…',
+    noneYet: 'Aucune détection lancée.',
+    foundN: '{n} harnais sur {total} détectés',
+    s2: 'Endpoint & test',
+    url: 'Base URL (les fautes de frappe sont corrigées : <span class="mono">http//192.168.1.170:8080/v1</span>)',
+    urlhint: 'le serveur peut être sur une autre machine du réseau',
+    test: 'Tester l’API',
+    probewin: 'Sonder la fenêtre',
+    key: 'Clé API',
+    keyph: '(aucune)',
+    s3: 'Fournisseur à écrire',
+    previewAll: 'Aperçu pour tout',
+    writeAll: 'Écrire partout (cases cochées)',
+    include: 'inclure',
+    recalc: 'Recalculer depuis la sonde',
+    preview: 'Aperçu',
+    write: 'Écrire',
+    mAdd: 'Ajouter / mettre à jour',
+    mAddD: 'Insère ce fournisseur, ou écrase celui de même clé. Les autres fournisseurs, <b>model</b>, <b>mcp</b> et les commentaires restent intacts.',
+    mRep: 'Remplacer les fournisseurs',
+    mRepD: '⚠ Les autres fournisseurs sont <b>supprimés</b>. Les autres clés (model, mcp) et les commentaires restent.',
+    mRes: 'Remettre le fichier à zéro',
+    mResD: 'Document minimal : <b>$schema</b> + <b>model</b> + ce fournisseur. Tout le reste (mcp, agents, commentaires) est supprimé.',
+    declared: 'déjà déclarés (cliquer pour reprendre l’adresse et la variable de clé) :',
+    none: 'aucun',
+    paths: 'Chemins',
+    pathCfg: 'fichier de configuration',
+    pathEnv: 'fichier .env',
+    pathReset: 'Chemins par défaut',
+    pathCustom: 'chemin personnalisé',
+    envVar: 'variable',
+    envVal: 'valeur de la clé (vide = ne pas toucher au .env)',
+    envWrite: 'Écrire dans le .env',
+    envCopy: 'Copier la ligne',
+    envFound: 'fichier trouvé',
+    envMissing: 'introuvable',
+    envHint: 'le fournisseur lit la clé dans une variable d’environnement',
+    envExisting: 'variables déjà présentes',
+    verDetected: 'détecté',
+    verVerified: 'version vérifiée',
+    verUnknown: 'version inconnue',
+    verMismatch: 'version non vérifiée',
+    s4: 'Aperçu & journal',
+    noPreview: 'Aucun aperçu.',
+    copyPrev: 'Copier l’aperçu',
+    download: 'Télécharger',
+    backup: 'Télécharger la sauvegarde',
+    ready: 'aperçu prêt',
+    warnN: '{n} avertissement(s)',
+    combined: 'vue combinée — utilise « Aperçu » d’une carte pour télécharger ou sauvegarder un fichier',
+    fProviderId: 'clé du fournisseur',
+    fProviderName: 'nom affiché',
+    fBaseURL2: 'baseURL (telle que vue par ce harnais)',
+    fPkg: 'package',
+    fMalias: 'alias du modèle',
+    fMid: 'modelID (sur le fil)',
+    fMname: 'nom du modèle',
+    fCtx: 'contexte',
+    fOut: 'sortie max',
+    fRfield: 'reasoningField',
+    fHt: 'headerTimeout',
+    fCt: 'chunkTimeout',
+    fCapTools: 'capacité tools',
+    fCapImg: 'entrée image',
+    fSetAsModel: 'model: → ce modèle',
+    fBodyJson: 'body (JSON fondu dans la requête)',
+    fVariantsJson: 'variants (tableau JSON)',
+    fModel: 'model',
+    fAllModels: 'déclarer tous les modèles exposés',
+    fSetActive: 'rendre actif (réécrit le bloc model:)',
+    fIdle: 'streamIdleTimeoutMs',
+    fDmt: 'defaultMaxTokens',
+    fThinking: 'compat chat-template',
+    fPreserve: 'preserve_thinking',
+    fEfforts: 'reasoningEfforts (une paire par ligne, clé=valeur)',
+    fEffortDef: 'reasoningEffort (agent-default-model)',
+    errNoProv: 'la clé du fournisseur est vide.',
+    errPreview: 'aperçu impossible',
+    errScan: 'Scan impossible',
+    errWrite: 'écriture refusée',
+    errEmpty: 'Variable ou valeur vide — .env non touché.'
+  },
+  en: {
+    sub: 'Probes an OpenAI-compatible API (<span class="mono">http://ip:port/v1</span>) on the network, then writes the provider into the configuration files of the harnesses <b>found on this machine</b>. The probe goes through the local bridge: that is what avoids the CORS block that made the <span class="mono">file://</span> version unusable.',
+    docs: 'Documentation',
+    s1: 'Harness detection',
+    s1hint: 'Interface served by <span class="mono">LLMBridge</span> (local bridge on <span class="mono">127.0.0.1</span>): the bridge reads and writes the files and queries the API — the browser can do neither from a <span class="mono">file://</span> page. Default paths are used for each harness; you can override them under “Paths”.',
+    scan: 'Scan my configuration files',
+    rescan: 'Rescan',
+    deep: 'Also search deeper (if the files are outside the default paths)',
+    thHarness: 'Harness',
+    thFile: 'Detected file',
+    thState: 'State',
+    thProv: 'Declared providers',
+    thActive: 'Active',
+    found: 'FOUND',
+    absent: 'MISSING',
+    openOther: 'Open another file…',
+    noneYet: 'No detection run yet.',
+    foundN: '{n} of {total} harnesses found',
+    s2: 'Endpoint & test',
+    url: 'Base URL (typos are fixed: <span class="mono">http//192.168.1.170:8080/v1</span>)',
+    urlhint: 'the server may live on another machine of the network',
+    test: 'Test the API',
+    probewin: 'Probe context window',
+    key: 'API key',
+    keyph: '(none)',
+    s3: 'Provider to write',
+    previewAll: 'Preview all',
+    writeAll: 'Write everywhere (checked boxes)',
+    include: 'include',
+    recalc: 'Refill from the probe',
+    preview: 'Preview',
+    write: 'Write',
+    mAdd: 'Add / update',
+    mAddD: 'Inserts this provider, or overwrites the one with the same key. Other providers, <b>model</b>, <b>mcp</b> and comments stay intact.',
+    mRep: 'Replace providers',
+    mRepD: '⚠ Other providers are <b>deleted</b>. Other keys (model, mcp) and comments stay.',
+    mRes: 'Reset the file',
+    mResD: 'Minimal document: <b>$schema</b> + <b>model</b> + this provider. Everything else (mcp, agents, comments) is removed.',
+    declared: 'already declared (click to reuse the address and key variable):',
+    none: 'none',
+    paths: 'Paths',
+    pathCfg: 'configuration file',
+    pathEnv: '.env file',
+    pathReset: 'Default paths',
+    pathCustom: 'custom path',
+    envVar: 'variable',
+    envVal: 'key value (empty = leave the .env untouched)',
+    envWrite: 'Write to .env',
+    envCopy: 'Copy the line',
+    envFound: 'file found',
+    envMissing: 'not found',
+    envHint: 'the provider reads the key from an environment variable',
+    envExisting: 'existing variables',
+    verDetected: 'detected',
+    verVerified: 'verified version',
+    verUnknown: 'unknown version',
+    verMismatch: 'unverified version',
+    s4: 'Preview & log',
+    noPreview: 'No preview.',
+    copyPrev: 'Copy preview',
+    download: 'Download',
+    backup: 'Download backup',
+    ready: 'preview ready',
+    warnN: '{n} warning(s)',
+    combined: 'combined view — use a card’s “Preview” to download or back up a single file',
+    fProviderId: 'provider key',
+    fProviderName: 'display name',
+    fBaseURL2: 'baseURL (as seen by this harness)',
+    fPkg: 'package',
+    fMalias: 'model alias',
+    fMid: 'modelID (on the wire)',
+    fMname: 'model name',
+    fCtx: 'context',
+    fOut: 'max output',
+    fRfield: 'reasoningField',
+    fHt: 'headerTimeout',
+    fCt: 'chunkTimeout',
+    fCapTools: 'tools capability',
+    fCapImg: 'image input',
+    fSetAsModel: 'model: → this model',
+    fBodyJson: 'body (JSON merged into the request)',
+    fVariantsJson: 'variants (JSON array)',
+    fModel: 'model',
+    fAllModels: 'declare every exposed model',
+    fSetActive: 'make active (rewrites the model: block)',
+    fIdle: 'streamIdleTimeoutMs',
+    fDmt: 'defaultMaxTokens',
+    fThinking: 'chat-template compatibility',
+    fPreserve: 'preserve_thinking',
+    fEfforts: 'reasoningEfforts (one pair per line, key=value)',
+    fEffortDef: 'reasoningEffort (agent-default-model)',
+    errNoProv: 'the provider key is empty.',
+    errPreview: 'preview failed',
+    errScan: 'Scan failed',
+    errWrite: 'write refused',
+    errEmpty: 'Empty variable or value — .env untouched.'
+  }
+};
+
+/* --- de / es / it / pt / nl / pl ------------------------------------- */
+Object.assign(I18N, {
+  de: {
+    sub: 'Testet eine OpenAI-kompatible API (<span class="mono">http://ip:port/v1</span>) im Netzwerk und schreibt den Provider in die Konfigurationsdateien der <b>auf diesem Rechner gefundenen</b> Harnesse. Die Abfrage läuft über die lokale Brücke — das umgeht die CORS-Sperre, die die <span class="mono">file://</span>-Version unbrauchbar machte.',
+    docs: 'Dokumentation',
+    s1: 'Harness-Erkennung',
+    s1hint: 'Oberfläche ausgeliefert von <span class="mono">LLMBridge</span> (lokale Brücke auf <span class="mono">127.0.0.1</span>): Die Brücke liest und schreibt die Dateien und fragt die API ab — der Browser kann beides von einer <span class="mono">file://</span>-Seite aus nicht. Es gelten die Standardpfade; unter „Pfade“ änderbar.',
+    scan: 'Konfigurationsdateien suchen',
+    rescan: 'Erneut suchen',
+    deep: 'Auch tiefer suchen (wenn die Dateien nicht an den Standardpfaden liegen)',
+    thHarness: 'Harness',
+    thFile: 'Gefundene Datei',
+    thState: 'Status',
+    thProv: 'Deklarierte Provider',
+    thActive: 'Aktiv',
+    found: 'GEFUNDEN',
+    absent: 'FEHLT',
+    openOther: 'Andere Datei öffnen…',
+    noneYet: 'Noch keine Suche ausgeführt.',
+    foundN: '{n} von {total} Harnessen gefunden',
+    s2: 'Endpoint & Test',
+    url: 'Base-URL (Tippfehler werden korrigiert: <span class="mono">http//192.168.1.170:8080/v1</span>)',
+    urlhint: 'der Server kann auf einem anderen Rechner im Netz laufen',
+    test: 'API testen',
+    probewin: 'Kontextfenster abfragen',
+    key: 'API-Schlüssel',
+    keyph: '(keiner)',
+    s3: 'Zu schreibender Provider',
+    previewAll: 'Vorschau für alle',
+    writeAll: 'Überall schreiben (markierte Kästen)',
+    include: 'einbeziehen',
+    recalc: 'Aus der Abfrage neu füllen',
+    preview: 'Vorschau',
+    write: 'Schreiben',
+    mAdd: 'Hinzufügen / aktualisieren',
+    mAddD: 'Fügt diesen Provider ein oder überschreibt den mit gleichem Schlüssel. Andere Provider, <b>model</b>, <b>mcp</b> und Kommentare bleiben erhalten.',
+    mRep: 'Provider ersetzen',
+    mRepD: '⚠ Andere Provider werden <b>gelöscht</b>. Andere Schlüssel (model, mcp) und Kommentare bleiben.',
+    mRes: 'Datei zurücksetzen',
+    mResD: 'Minimales Dokument: <b>$schema</b> + <b>model</b> + dieser Provider. Alles andere (mcp, Agenten, Kommentare) entfällt.',
+    declared: 'bereits deklariert (klicken, um Adresse und Schlüsselvariable zu übernehmen):',
+    none: 'keine',
+    paths: 'Pfade',
+    pathCfg: 'Konfigurationsdatei',
+    pathEnv: '.env-Datei',
+    pathReset: 'Standardpfade',
+    pathCustom: 'eigener Pfad',
+    envVar: 'Variable',
+    envVal: 'Schlüsselwert (leer = .env nicht anfassen)',
+    envWrite: 'In .env schreiben',
+    envCopy: 'Zeile kopieren',
+    envFound: 'Datei gefunden',
+    envMissing: 'nicht gefunden',
+    envHint: 'der Provider liest den Schlüssel aus einer Umgebungsvariablen',
+    envExisting: 'vorhandene Variablen',
+    verDetected: 'erkannt',
+    verVerified: 'geprüfte Version',
+    verUnknown: 'unbekannte Version',
+    verMismatch: 'ungeprüfte Version',
+    s4: 'Vorschau & Protokoll',
+    noPreview: 'Keine Vorschau.',
+    copyPrev: 'Vorschau kopieren',
+    download: 'Herunterladen',
+    backup: 'Sicherung herunterladen',
+    ready: 'Vorschau bereit',
+    warnN: '{n} Warnung(en)',
+    combined: 'kombinierte Ansicht — „Vorschau“ einer Karte nutzen, um eine Datei herunterzuladen oder zu sichern',
+    fProviderId: 'Provider-Schlüssel',
+    fProviderName: 'Anzeigename',
+    fBaseURL2: 'baseURL (wie dieser Harness sie sieht)',
+    fPkg: 'Paket',
+    fMalias: 'Modell-Alias',
+    fMid: 'modelID (auf dem Draht)',
+    fMname: 'Modellname',
+    fCtx: 'Kontext',
+    fOut: 'max. Ausgabe',
+    fCapTools: 'Tool-Fähigkeit',
+    fCapImg: 'Bildeingabe',
+    fSetAsModel: 'model: → dieses Modell',
+    fBodyJson: 'body (JSON in die Anfrage gemischt)',
+    fVariantsJson: 'variants (JSON-Array)',
+    fModel: 'model',
+    fAllModels: 'alle verfügbaren Modelle deklarieren',
+    fSetActive: 'aktivieren (schreibt den model:-Block neu)',
+    fThinking: 'chat-template-Kompatibilität',
+    fEfforts: 'reasoningEfforts (ein Paar pro Zeile, Schlüssel=Wert)',
+    fEffortDef: 'reasoningEffort (agent-default-model)',
+    errNoProv: 'der Provider-Schlüssel ist leer.',
+    errPreview: 'Vorschau fehlgeschlagen',
+    errScan: 'Suche fehlgeschlagen',
+    errWrite: 'Schreiben abgelehnt',
+    errEmpty: 'Variable oder Wert leer — .env unverändert.',
+    docsNote: 'Die Dokumentation ist auf Englisch und Französisch verfügbar; die Oberfläche ist in acht Sprachen übersetzt.'
+  },
+  es: {
+    sub: 'Sondea una API compatible con OpenAI (<span class="mono">http://ip:port/v1</span>) en la red y escribe el proveedor en los archivos de configuración de los arneses <b>detectados en esta máquina</b>. La sonda pasa por el puente local: eso evita el bloqueo CORS que hacía inutilizable la versión <span class="mono">file://</span>.',
+    docs: 'Documentación',
+    s1: 'Detección de arneses',
+    s1hint: 'Interfaz servida por <span class="mono">LLMBridge</span> (puente local en <span class="mono">127.0.0.1</span>): el puente lee y escribe los archivos y consulta la API — el navegador no puede hacer ninguna de las dos cosas desde una página <span class="mono">file://</span>. Se usan las rutas por defecto; puedes cambiarlas en «Rutas».',
+    scan: 'Escanear mis archivos de configuración',
+    rescan: 'Volver a escanear',
+    deep: 'Buscar también más profundo (si los archivos están fuera de las rutas por defecto)',
+    thHarness: 'Arnés',
+    thFile: 'Archivo detectado',
+    thState: 'Estado',
+    thProv: 'Proveedores declarados',
+    thActive: 'Activo',
+    found: 'ENCONTRADO',
+    absent: 'AUSENTE',
+    openOther: 'Abrir otro archivo…',
+    noneYet: 'Ninguna detección lanzada.',
+    foundN: '{n} de {total} arneses detectados',
+    s2: 'Endpoint y prueba',
+    url: 'Base URL (los errores de tecleo se corrigen: <span class="mono">http//192.168.1.170:8080/v1</span>)',
+    urlhint: 'el servidor puede estar en otra máquina de la red',
+    test: 'Probar la API',
+    probewin: 'Sondear la ventana',
+    key: 'Clave API',
+    keyph: '(ninguna)',
+    s3: 'Proveedor a escribir',
+    previewAll: 'Vista previa de todo',
+    writeAll: 'Escribir en todo (casillas marcadas)',
+    include: 'incluir',
+    recalc: 'Recalcular desde la sonda',
+    preview: 'Vista previa',
+    write: 'Escribir',
+    mAdd: 'Añadir / actualizar',
+    mAddD: 'Inserta este proveedor o sobrescribe el de la misma clave. Los demás proveedores, <b>model</b>, <b>mcp</b> y los comentarios se conservan.',
+    mRep: 'Reemplazar los proveedores',
+    mRepD: '⚠ Los demás proveedores se <b>eliminan</b>. Las otras claves (model, mcp) y los comentarios se conservan.',
+    mRes: 'Reiniciar el archivo',
+    mResD: 'Documento mínimo: <b>$schema</b> + <b>model</b> + este proveedor. Todo lo demás (mcp, agentes, comentarios) se elimina.',
+    declared: 'ya declarados (clic para reutilizar la dirección y la variable de clave):',
+    none: 'ninguno',
+    paths: 'Rutas',
+    pathCfg: 'archivo de configuración',
+    pathEnv: 'archivo .env',
+    pathReset: 'Rutas por defecto',
+    pathCustom: 'ruta personalizada',
+    envVar: 'variable',
+    envVal: 'valor de la clave (vacío = no tocar el .env)',
+    envWrite: 'Escribir en el .env',
+    envCopy: 'Copiar la línea',
+    envFound: 'archivo encontrado',
+    envMissing: 'no encontrado',
+    envHint: 'el proveedor lee la clave en una variable de entorno',
+    envExisting: 'variables ya presentes',
+    verDetected: 'detectado',
+    verVerified: 'versión verificada',
+    verUnknown: 'versión desconocida',
+    verMismatch: 'versión no verificada',
+    s4: 'Vista previa y registro',
+    noPreview: 'Ninguna vista previa.',
+    copyPrev: 'Copiar la vista previa',
+    download: 'Descargar',
+    backup: 'Descargar la copia',
+    ready: 'vista previa lista',
+    warnN: '{n} advertencia(s)',
+    combined: 'vista combinada — usa «Vista previa» de una tarjeta para descargar o guardar un archivo',
+    fProviderId: 'clave del proveedor',
+    fProviderName: 'nombre mostrado',
+    fBaseURL2: 'baseURL (tal como la ve este arnés)',
+    fPkg: 'paquete',
+    fMalias: 'alias del modelo',
+    fMid: 'modelID (en el cable)',
+    fMname: 'nombre del modelo',
+    fCtx: 'contexto',
+    fOut: 'salida máxima',
+    fCapTools: 'capacidad tools',
+    fCapImg: 'entrada de imagen',
+    fSetAsModel: 'model: → este modelo',
+    fBodyJson: 'body (JSON fundido en la petición)',
+    fVariantsJson: 'variants (array JSON)',
+    fModel: 'model',
+    fAllModels: 'declarar todos los modelos expuestos',
+    fSetActive: 'activar (reescribe el bloque model:)',
+    fThinking: 'compatibilidad chat-template',
+    fEfforts: 'reasoningEfforts (un par por línea, clave=valor)',
+    fEffortDef: 'reasoningEffort (agent-default-model)',
+    errNoProv: 'la clave del proveedor está vacía.',
+    errPreview: 'vista previa imposible',
+    errScan: 'escaneo imposible',
+    errWrite: 'escritura rechazada',
+    errEmpty: 'Variable o valor vacío — .env sin tocar.',
+    docsNote: 'La documentación está disponible en inglés y francés; la interfaz está traducida a ocho idiomas.'
+  },
+  it: {
+    sub: 'Sonda un’API compatibile OpenAI (<span class="mono">http://ip:port/v1</span>) sulla rete e scrive il provider nei file di configurazione degli harness <b>rilevati su questa macchina</b>. La sonda passa dal ponte locale: è ciò che evita il blocco CORS che rendeva inutilizzabile la versione <span class="mono">file://</span>.',
+    docs: 'Documentazione',
+    s1: 'Rilevamento degli harness',
+    s1hint: 'Interfaccia servita da <span class="mono">LLMBridge</span> (ponte locale su <span class="mono">127.0.0.1</span>): è il ponte che legge e scrive i file e interroga l’API — il browser non può fare né l’uno né l’altro da una pagina <span class="mono">file://</span>. Vengono usati i percorsi predefiniti; puoi cambiarli in «Percorsi».',
+    scan: 'Scansiona i miei file di configurazione',
+    rescan: 'Riscansiona',
+    deep: 'Cerca anche più in profondità (se i file sono fuori dai percorsi predefiniti)',
+    thHarness: 'Harness',
+    thFile: 'File rilevato',
+    thState: 'Stato',
+    thProv: 'Provider dichiarati',
+    thActive: 'Attivo',
+    found: 'TROVATO',
+    absent: 'ASSENTE',
+    openOther: 'Apri un altro file…',
+    noneYet: 'Nessun rilevamento avviato.',
+    foundN: '{n} harness su {total} rilevati',
+    s2: 'Endpoint e test',
+    url: 'Base URL (gli errori di battitura vengono corretti: <span class="mono">http//192.168.1.170:8080/v1</span>)',
+    urlhint: 'il server può stare su un’altra macchina della rete',
+    test: 'Prova l’API',
+    probewin: 'Sonda la finestra',
+    key: 'Chiave API',
+    keyph: '(nessuna)',
+    s3: 'Provider da scrivere',
+    previewAll: 'Anteprima per tutto',
+    writeAll: 'Scrivi ovunque (caselle spuntate)',
+    include: 'includi',
+    recalc: 'Ricalcola dalla sonda',
+    preview: 'Anteprima',
+    write: 'Scrivi',
+    mAdd: 'Aggiungi / aggiorna',
+    mAddD: 'Inserisce questo provider o sovrascrive quello con la stessa chiave. Gli altri provider, <b>model</b>, <b>mcp</b> e i commenti restano intatti.',
+    mRep: 'Sostituisci i provider',
+    mRepD: '⚠ Gli altri provider vengono <b>eliminati</b>. Le altre chiavi (model, mcp) e i commenti restano.',
+    mRes: 'Azzera il file',
+    mResD: 'Documento minimo: <b>$schema</b> + <b>model</b> + questo provider. Tutto il resto (mcp, agenti, commenti) viene rimosso.',
+    declared: 'già dichiarati (clicca per riusare indirizzo e variabile della chiave):',
+    none: 'nessuno',
+    paths: 'Percorsi',
+    pathCfg: 'file di configurazione',
+    pathEnv: 'file .env',
+    pathReset: 'Percorsi predefiniti',
+    pathCustom: 'percorso personalizzato',
+    envVar: 'variabile',
+    envVal: 'valore della chiave (vuoto = non toccare il .env)',
+    envWrite: 'Scrivi nel .env',
+    envCopy: 'Copia la riga',
+    envFound: 'file trovato',
+    envMissing: 'non trovato',
+    envHint: 'il provider legge la chiave da una variabile d’ambiente',
+    envExisting: 'variabili già presenti',
+    verDetected: 'rilevata',
+    verVerified: 'versione verificata',
+    verUnknown: 'versione sconosciuta',
+    verMismatch: 'versione non verificata',
+    s4: 'Anteprima e registro',
+    noPreview: 'Nessuna anteprima.',
+    copyPrev: 'Copia l’anteprima',
+    download: 'Scarica',
+    backup: 'Scarica il backup',
+    ready: 'anteprima pronta',
+    warnN: '{n} avviso/i',
+    combined: 'vista combinata — usa «Anteprima» di una scheda per scaricare o salvare un file',
+    fProviderId: 'chiave del provider',
+    fProviderName: 'nome mostrato',
+    fBaseURL2: 'baseURL (come la vede questo harness)',
+    fPkg: 'pacchetto',
+    fMalias: 'alias del modello',
+    fMid: 'modelID (sul filo)',
+    fMname: 'nome del modello',
+    fCtx: 'contesto',
+    fOut: 'uscita massima',
+    fCapTools: 'capacità tools',
+    fCapImg: 'input immagine',
+    fSetAsModel: 'model: → questo modello',
+    fBodyJson: 'body (JSON fuso nella richiesta)',
+    fVariantsJson: 'variants (array JSON)',
+    fModel: 'model',
+    fAllModels: 'dichiarare tutti i modelli esposti',
+    fSetActive: 'rendi attivo (riscrive il blocco model:)',
+    fThinking: 'compatibilità chat-template',
+    fEfforts: 'reasoningEfforts (una coppia per riga, chiave=valore)',
+    fEffortDef: 'reasoningEffort (agent-default-model)',
+    errNoProv: 'la chiave del provider è vuota.',
+    errPreview: 'anteprima impossibile',
+    errScan: 'scansione impossibile',
+    errWrite: 'scrittura rifiutata',
+    errEmpty: 'Variabile o valore vuoto — .env non toccato.',
+    docsNote: 'La documentazione è disponibile in inglese e francese; l’interfaccia è tradotta in otto lingue.'
+  },
+  pt: {
+    sub: 'Sonda uma API compatível com OpenAI (<span class="mono">http://ip:port/v1</span>) na rede e escreve o fornecedor nos ficheiros de configuração dos harnesses <b>detetados nesta máquina</b>. A sonda passa pela ponte local: é isso que evita o bloqueio CORS que tornava a versão <span class="mono">file://</span> inutilizável.',
+    docs: 'Documentação',
+    s1: 'Deteção dos harnesses',
+    s1hint: 'Interface servida por <span class="mono">LLMBridge</span> (ponte local em <span class="mono">127.0.0.1</span>): é a ponte que lê e escreve os ficheiros e interroga a API — o navegador não consegue fazer nenhum dos dois a partir de uma página <span class="mono">file://</span>. Usa os caminhos predefinidos; pode alterá-los em «Caminhos».',
+    scan: 'Analisar os meus ficheiros de configuração',
+    rescan: 'Analisar novamente',
+    deep: 'Procurar também mais fundo (se os ficheiros estiverem fora dos caminhos predefinidos)',
+    thHarness: 'Harness',
+    thFile: 'Ficheiro detetado',
+    thState: 'Estado',
+    thProv: 'Fornecedores declarados',
+    thActive: 'Ativo',
+    found: 'ENCONTRADO',
+    absent: 'AUSENTE',
+    openOther: 'Abrir outro ficheiro…',
+    noneYet: 'Nenhuma deteção iniciada.',
+    foundN: '{n} de {total} harnesses detetados',
+    s2: 'Endpoint e teste',
+    url: 'Base URL (os erros de escrita são corrigidos: <span class="mono">http//192.168.1.170:8080/v1</span>)',
+    urlhint: 'o servidor pode estar noutra máquina da rede',
+    test: 'Testar a API',
+    probewin: 'Sondar a janela',
+    key: 'Chave API',
+    keyph: '(nenhuma)',
+    s3: 'Fornecedor a escrever',
+    previewAll: 'Pré-visualizar tudo',
+    writeAll: 'Escrever em todo o lado (caixas marcadas)',
+    include: 'incluir',
+    recalc: 'Recalcular a partir da sonda',
+    preview: 'Pré-visualizar',
+    write: 'Escrever',
+    mAdd: 'Adicionar / atualizar',
+    mAddD: 'Insere este fornecedor ou substitui o de mesma chave. Os outros fornecedores, <b>model</b>, <b>mcp</b> e os comentários ficam intactos.',
+    mRep: 'Substituir os fornecedores',
+    mRepD: '⚠ Os outros fornecedores são <b>eliminados</b>. As outras chaves (model, mcp) e os comentários ficam.',
+    mRes: 'Repor o ficheiro',
+    mResD: 'Documento mínimo: <b>$schema</b> + <b>model</b> + este fornecedor. Tudo o resto (mcp, agentes, comentários) é removido.',
+    declared: 'já declarados (clique para reutilizar o endereço e a variável da chave):',
+    none: 'nenhum',
+    paths: 'Caminhos',
+    pathCfg: 'ficheiro de configuração',
+    pathEnv: 'ficheiro .env',
+    pathReset: 'Caminhos predefinidos',
+    pathCustom: 'caminho personalizado',
+    envVar: 'variável',
+    envVal: 'valor da chave (vazio = não tocar no .env)',
+    envWrite: 'Escrever no .env',
+    envCopy: 'Copiar a linha',
+    envFound: 'ficheiro encontrado',
+    envMissing: 'não encontrado',
+    envHint: 'o fornecedor lê a chave numa variável de ambiente',
+    envExisting: 'variáveis já presentes',
+    verDetected: 'detetado',
+    verVerified: 'versão verificada',
+    verUnknown: 'versão desconhecida',
+    verMismatch: 'versão não verificada',
+    s4: 'Pré-visualização e registo',
+    noPreview: 'Nenhuma pré-visualização.',
+    copyPrev: 'Copiar a pré-visualização',
+    download: 'Transferir',
+    backup: 'Transferir a cópia',
+    ready: 'pré-visualização pronta',
+    warnN: '{n} aviso(s)',
+    combined: 'vista combinada — use «Pré-visualizar» de um cartão para transferir ou guardar um ficheiro',
+    fProviderId: 'chave do fornecedor',
+    fProviderName: 'nome mostrado',
+    fBaseURL2: 'baseURL (como este harness a vê)',
+    fPkg: 'pacote',
+    fMalias: 'alias do modelo',
+    fMid: 'modelID (no pedido)',
+    fMname: 'nome do modelo',
+    fCtx: 'contexto',
+    fOut: 'saída máxima',
+    fCapTools: 'capacidade tools',
+    fCapImg: 'entrada de imagem',
+    fSetAsModel: 'model: → este modelo',
+    fBodyJson: 'body (JSON fundido no pedido)',
+    fVariantsJson: 'variants (array JSON)',
+    fModel: 'model',
+    fAllModels: 'declarar todos os modelos expostos',
+    fSetActive: 'tornar ativo (reescreve o bloco model:)',
+    fThinking: 'compatibilidade chat-template',
+    fEfforts: 'reasoningEfforts (um par por linha, chave=valor)',
+    fEffortDef: 'reasoningEffort (agent-default-model)',
+    errNoProv: 'a chave do fornecedor está vazia.',
+    errPreview: 'pré-visualização impossível',
+    errScan: 'análise impossível',
+    errWrite: 'escrita recusada',
+    errEmpty: 'Variável ou valor vazio — .env intacto.',
+    docsNote: 'A documentação está disponível em inglês e francês; a interface está traduzida em oito línguas.'
+  },
+  nl: {
+    sub: 'Test een OpenAI-compatibele API (<span class="mono">http://ip:port/v1</span>) op het netwerk en schrijft de provider in de configuratiebestanden van de harnesses <b>die op deze machine gevonden zijn</b>. De test loopt via de lokale brug: dat omzeilt de CORS-blokkade waardoor de <span class="mono">file://</span>-versie onbruikbaar was.',
+    docs: 'Documentatie',
+    s1: 'Harness-detectie',
+    s1hint: 'Interface geleverd door <span class="mono">LLMBridge</span> (lokale brug op <span class="mono">127.0.0.1</span>): de brug leest en schrijft de bestanden en bevraagt de API — de browser kan geen van beide vanuit een <span class="mono">file://</span>-pagina. Standaardpaden worden gebruikt; aanpasbaar onder “Paden”.',
+    scan: 'Mijn configuratiebestanden scannen',
+    rescan: 'Opnieuw scannen',
+    deep: 'Ook dieper zoeken (als de bestanden buiten de standaardpaden staan)',
+    thHarness: 'Harness',
+    thFile: 'Gevonden bestand',
+    thState: 'Status',
+    thProv: 'Gedeclareerde providers',
+    thActive: 'Actief',
+    found: 'GEVONDEN',
+    absent: 'ONTBREEKT',
+    openOther: 'Ander bestand openen…',
+    noneYet: 'Nog geen detectie uitgevoerd.',
+    foundN: '{n} van {total} harnesses gevonden',
+    s2: 'Endpoint & test',
+    url: 'Base-URL (typefouten worden hersteld: <span class="mono">http//192.168.1.170:8080/v1</span>)',
+    urlhint: 'de server kan op een andere machine in het netwerk staan',
+    test: 'API testen',
+    probewin: 'Contextvenster opvragen',
+    key: 'API-sleutel',
+    keyph: '(geen)',
+    s3: 'Te schrijven provider',
+    previewAll: 'Voorbeeld voor alles',
+    writeAll: 'Overal schrijven (aangevinkte vakjes)',
+    include: 'meenemen',
+    recalc: 'Opnieuw vullen vanuit de test',
+    preview: 'Voorbeeld',
+    write: 'Schrijven',
+    mAdd: 'Toevoegen / bijwerken',
+    mAddD: 'Voegt deze provider toe of overschrijft die met dezelfde sleutel. Andere providers, <b>model</b>, <b>mcp</b> en commentaar blijven intact.',
+    mRep: 'Providers vervangen',
+    mRepD: '⚠ Andere providers worden <b>verwijderd</b>. Andere sleutels (model, mcp) en commentaar blijven.',
+    mRes: 'Bestand terugzetten',
+    mResD: 'Minimaal document: <b>$schema</b> + <b>model</b> + deze provider. Al het andere (mcp, agents, commentaar) verdwijnt.',
+    declared: 'al gedeclareerd (klik om adres en sleutelvariabele over te nemen):',
+    none: 'geen',
+    paths: 'Paden',
+    pathCfg: 'configuratiebestand',
+    pathEnv: '.env-bestand',
+    pathReset: 'Standaardpaden',
+    pathCustom: 'aangepast pad',
+    envVar: 'variabele',
+    envVal: 'sleutelwaarde (leeg = .env niet aanraken)',
+    envWrite: 'Naar .env schrijven',
+    envCopy: 'Regel kopiëren',
+    envFound: 'bestand gevonden',
+    envMissing: 'niet gevonden',
+    envHint: 'de provider leest de sleutel uit een omgevingsvariabele',
+    envExisting: 'bestaande variabelen',
+    verDetected: 'gedetecteerd',
+    verVerified: 'gecontroleerde versie',
+    verUnknown: 'onbekende versie',
+    verMismatch: 'niet-gecontroleerde versie',
+    s4: 'Voorbeeld & logboek',
+    noPreview: 'Geen voorbeeld.',
+    copyPrev: 'Voorbeeld kopiëren',
+    download: 'Downloaden',
+    backup: 'Back-up downloaden',
+    ready: 'voorbeeld gereed',
+    warnN: '{n} waarschuwing(en)',
+    combined: 'gecombineerde weergave — gebruik “Voorbeeld” van een kaart om één bestand te downloaden of te bewaren',
+    fProviderId: 'provider-sleutel',
+    fProviderName: 'weergavenaam',
+    fBaseURL2: 'baseURL (zoals deze harness hem ziet)',
+    fPkg: 'pakket',
+    fMalias: 'modelalias',
+    fMid: 'modelID (op de draad)',
+    fMname: 'modelnaam',
+    fCtx: 'context',
+    fOut: 'max. uitvoer',
+    fCapTools: 'tools-capaciteit',
+    fCapImg: 'beeldinvoer',
+    fSetAsModel: 'model: → dit model',
+    fBodyJson: 'body (JSON in het verzoek gemengd)',
+    fVariantsJson: 'variants (JSON-array)',
+    fModel: 'model',
+    fAllModels: 'alle aangeboden modellen declareren',
+    fSetActive: 'actief maken (herschrijft het model:-blok)',
+    fThinking: 'chat-template-compatibiliteit',
+    fEfforts: 'reasoningEfforts (één paar per regel, sleutel=waarde)',
+    fEffortDef: 'reasoningEffort (agent-default-model)',
+    errNoProv: 'de provider-sleutel is leeg.',
+    errPreview: 'voorbeeld mislukt',
+    errScan: 'scan mislukt',
+    errWrite: 'schrijven geweigerd',
+    errEmpty: 'Variabele of waarde leeg — .env ongewijzigd.',
+    docsNote: 'De documentatie is beschikbaar in het Engels en Frans; de interface is in acht talen vertaald.'
+  },
+  pl: {
+    sub: 'Sonduje API zgodne z OpenAI (<span class="mono">http://ip:port/v1</span>) w sieci i zapisuje dostawcę do plików konfiguracyjnych harnessów <b>wykrytych na tej maszynie</b>. Sonda przechodzi przez lokalny pomost: to omija blokadę CORS, która czyniła wersję <span class="mono">file://</span> bezużyteczną.',
+    docs: 'Dokumentacja',
+    s1: 'Wykrywanie harnessów',
+    s1hint: 'Interfejs serwowany przez <span class="mono">LLMBridge</span> (lokalny pomost na <span class="mono">127.0.0.1</span>): to pomost czyta i zapisuje pliki oraz odpytuje API — przeglądarka nie potrafi ani jednego, ani drugiego ze strony <span class="mono">file://</span>. Używane są ścieżki domyślne; można je zmienić w „Ścieżki”.',
+    scan: 'Skanuj moje pliki konfiguracyjne',
+    rescan: 'Skanuj ponownie',
+    deep: 'Szukaj także głębiej (jeśli pliki są poza ścieżkami domyślnymi)',
+    thHarness: 'Harness',
+    thFile: 'Wykryty plik',
+    thState: 'Stan',
+    thProv: 'Zadeklarowani dostawcy',
+    thActive: 'Aktywny',
+    found: 'ZNALEZIONY',
+    absent: 'BRAK',
+    openOther: 'Otwórz inny plik…',
+    noneYet: 'Nie uruchomiono wykrywania.',
+    foundN: '{n} z {total} harnessów wykrytych',
+    s2: 'Endpoint i test',
+    url: 'Base URL (literówki są poprawiane: <span class="mono">http//192.168.1.170:8080/v1</span>)',
+    urlhint: 'serwer może działać na innej maszynie w sieci',
+    test: 'Testuj API',
+    probewin: 'Sondowanie okna',
+    key: 'Klucz API',
+    keyph: '(brak)',
+    s3: 'Dostawca do zapisania',
+    previewAll: 'Podgląd dla wszystkich',
+    writeAll: 'Zapisz wszędzie (zaznaczone pola)',
+    include: 'uwzględnij',
+    recalc: 'Przelicz z sondy',
+    preview: 'Podgląd',
+    write: 'Zapisz',
+    mAdd: 'Dodaj / zaktualizuj',
+    mAddD: 'Wstawia tego dostawcę lub nadpisuje o tym samym kluczu. Inni dostawcy, <b>model</b>, <b>mcp</b> i komentarze pozostają nietknięte.',
+    mRep: 'Zastąp dostawców',
+    mRepD: '⚠ Inni dostawcy zostaną <b>usunięci</b>. Pozostałe klucze (model, mcp) i komentarze zostają.',
+    mRes: 'Wyzeruj plik',
+    mResD: 'Minimalny dokument: <b>$schema</b> + <b>model</b> + ten dostawca. Wszystko inne (mcp, agenci, komentarze) jest usuwane.',
+    declared: 'już zadeklarowani (kliknij, aby przejąć adres i zmienną klucza):',
+    none: 'brak',
+    paths: 'Ścieżki',
+    pathCfg: 'plik konfiguracyjny',
+    pathEnv: 'plik .env',
+    pathReset: 'Ścieżki domyślne',
+    pathCustom: 'ścieżka niestandardowa',
+    envVar: 'zmienna',
+    envVal: 'wartość klucza (puste = nie zmieniaj .env)',
+    envWrite: 'Zapisz do .env',
+    envCopy: 'Kopiuj linię',
+    envFound: 'plik znaleziony',
+    envMissing: 'nie znaleziono',
+    envHint: 'dostawca czyta klucz ze zmiennej środowiskowej',
+    envExisting: 'istniejące zmienne',
+    verDetected: 'wykryto',
+    verVerified: 'wersja zweryfikowana',
+    verUnknown: 'wersja nieznana',
+    verMismatch: 'wersja niezweryfikowana',
+    s4: 'Podgląd i dziennik',
+    noPreview: 'Brak podglądu.',
+    copyPrev: 'Kopiuj podgląd',
+    download: 'Pobierz',
+    backup: 'Pobierz kopię',
+    ready: 'podgląd gotowy',
+    warnN: '{n} ostrzeżenie(a)',
+    combined: 'widok łączony — użyj „Podgląd” na karcie, aby pobrać lub zapisać jeden plik',
+    fProviderId: 'klucz dostawcy',
+    fProviderName: 'nazwa wyświetlana',
+    fBaseURL2: 'baseURL (jak widzi go ten harness)',
+    fPkg: 'pakiet',
+    fMalias: 'alias modelu',
+    fMid: 'modelID (na drucie)',
+    fMname: 'nazwa modelu',
+    fCtx: 'kontekst',
+    fOut: 'maks. wyjście',
+    fCapTools: 'zdolność tools',
+    fCapImg: 'wejście obrazu',
+    fSetAsModel: 'model: → ten model',
+    fBodyJson: 'body (JSON wtapiany w żądanie)',
+    fVariantsJson: 'variants (tablica JSON)',
+    fModel: 'model',
+    fAllModels: 'zadeklaruj wszystkie udostępnione modele',
+    fSetActive: 'ustaw jako aktywny (przepisuje blok model:)',
+    fThinking: 'zgodność chat-template',
+    fEfforts: 'reasoningEfforts (jedna para na linię, klucz=wartość)',
+    fEffortDef: 'reasoningEffort (agent-default-model)',
+    errNoProv: 'klucz dostawcy jest pusty.',
+    errPreview: 'podgląd niemożliwy',
+    errScan: 'skanowanie niemożliwe',
+    errWrite: 'zapis odrzucony',
+    errEmpty: 'Pusta zmienna lub wartość — .env nietknięty.',
+    docsNote: 'Dokumentacja jest dostępna po angielsku i francusku; interfejs przetłumaczono na osiem języków.'
+  }
+});
+
+/* --- moteur de traduction -------------------------------------------- */
+let LANG = 'fr';
+
+function t(key, vars){
+  const dict = I18N[LANG] || I18N.en;
+  let s = dict[key];
+  if (s === undefined) s = I18N.en[key];
+  if (s === undefined) s = key;
+  if (vars) s = String(s).replace(/\{(\w+)\}/g, (m, p) => (vars[p] === undefined ? m : vars[p]));
+  return s;
+}
+
+function detectLang(){
+  try {
+    const saved = localStorage.getItem('llmbridge.lang');
+    if (saved && I18N[saved]) return saved;
+    const q = new URLSearchParams(location.search).get('lang');
+    if (q && I18N[q]) return q;
+    const nav = String(navigator.language || 'en').slice(0, 2).toLowerCase();
+    if (I18N[nav]) return nav;
+  } catch (e) { /* navigation privée, file://… */ }
+  return 'en';
+}
+
+/* Remplace le titre d'une section sans toucher au numéro ni aux badges. */
+function setSectionTitle(section, key){
+  if (!section) return;
+  const hd = section.querySelector(':scope > .hd');
+  if (!hd) return;
+  [...hd.childNodes].forEach(n => {
+    if (n.nodeType === 3 && n.textContent.trim()) n.remove();
+  });
+  const num = hd.querySelector('.n');
+  const html = ' ' + t(key) + ' ';
+  if (num) num.insertAdjacentHTML('afterend', html);
+  else hd.insertAdjacentHTML('afterbegin', html);
+}
+
+const DOCS = {
+  fr: [
+    ['Ce que fait l’outil', `
+      <p>Il sonde une API compatible OpenAI (<code>http://ip:port/v1</code>), en déduit la fenêtre de contexte,
+      les modalités et le modèle exposé, puis écrit un fournisseur prêt à l’emploi dans
+      <b>opencode</b>, <b>Hermes Agent</b> et <b>dsh</b>.</p>
+      <p>Pourquoi un pont local ? Deux choses sont impossibles depuis une page <code>file://</code> :
+      le navigateur bloque <code>fetch()</code> vers l’API (l’origine vaut <code>null</code>, le serveur
+      n’envoie pas <code>Access-Control-Allow-Origin</code>) et il n’a pas d’accès disque fiable.
+      <code>LLMBridge</code> fait les deux côté serveur, sur <code>127.0.0.1</code> uniquement.</p>`],
+    ['Trois façons de l’utiliser', `
+      <table><tr><th>Mode</th><th>Commande</th><th>Quand</th></tr>
+      <tr><td><b>Binaire</b></td><td><code>LLMBridge.exe</code></td><td>rien à installer, double-clic</td></tr>
+      <tr><td><b>Script</b></td><td><code>python app.py</code></td><td>Python 3.10+, sans compilation</td></tr>
+      <tr><td><b>Développement</b></td><td><code>python app.py --html web/index.html</code></td><td>modifier l’interface sans reconstruire</td></tr>
+      </table>
+      <p class="note">Options : <code>--root DIR</code>, <code>--port N</code>, <code>--no-browser</code>,
+      <code>--insecure</code> (TLS auto-signé), <code>--list</code>.</p>`],
+    ['Versions vérifiées', `
+      <table><tr><th>Harnais</th><th>Version testée</th><th>Ce qui est écrit</th></tr>
+      <tr><td>opencode</td><td><b>2.1.4</b></td><td><code>providers.*</code> (settings, models, limit, compatibility)</td></tr>
+      <tr><td>Hermes Agent</td><td><b>0.22.5</b> (config v51)</td><td><code>custom_providers[]</code> + bloc <code>model:</code></td></tr>
+      <tr><td>dsh</td><td><b>0.2.1-rc.2</b></td><td><code>llm-pi-ai → providers</code> + <code>agent-default-model</code></td></tr>
+      </table>
+      <p>Les badges de chaque carte affichent la version réellement détectée sur cette machine et signalent
+      une version non vérifiée. Si un harnais évolue, l’outil continue d’écrire : c’est la forme du fichier
+      qui compte, pas le numéro.</p>`],
+    ['Chemins', `
+      <p>Par défaut, l’outil cherche sous votre dossier utilisateur :</p>
+      <ul>
+        <li><code>~/.config/opencode/opencode.jsonc</code></li>
+        <li><code>~/.hermes/config.yaml</code> et <code>~/.hermes/.env</code></li>
+        <li><code>~/.dsh/cordis.patch.yml</code> et <code>~/.dsh/.env</code></li>
+      </ul>
+      <p>Si vous avez installé ailleurs, ouvrez « Chemins » sur une carte et donnez le fichier exact
+      (<code>%VARS%</code>, <code>~</code> et <code>$VARS</code> sont développés). Le <code>.env</code>
+      voisin est déduit automatiquement ; les chemins sont mémorisés dans ce navigateur.</p>`],
+    ['Garde-fous', `
+      <ul>
+        <li>écoute sur <code>127.0.0.1</code> seulement, cookie de session <code>SameSite=Strict</code> et
+        contrôle d’origine : une page web tierce ne peut pas déclencher d’écriture ;</li>
+        <li>écriture limitée aux fichiers détectés par le dernier scan (et à des noms connus) ;</li>
+        <li>sauvegarde <code>.bak-&lt;horodatage&gt;</code> systématique avant remplacement ;</li>
+        <li>rien n’est envoyé ailleurs qu’à l’endpoint que vous sondez.</li>
+      </ul>`],
+    ['Dépannage', `
+      <ul>
+        <li><b>INJOIGNABLE</b> — l’IP, le port ou le pare-feu. Le message affiche l’erreur réelle
+        (<code>ConnectionRefusedError</code>, timeout…). Vérifiez que le serveur écoute sur <code>0.0.0.0</code>.</li>
+        <li><b>Tous les harnais ABSENTS</b> — mauvaise racine (compte différent, profil déplacé) :
+        la racine est affichée en haut. Utilisez « Chemins » ou <code>--root</code>.</li>
+        <li><b>Écriture refusée (403)</b> — le fichier n’a pas été vu par le dernier scan : relancez la détection,
+        ou déclarez son chemin.</li>
+        <li><b>Port occupé</b> — 12 ports suivants essayés, puis lancez avec <code>--port</code>.</li>
+        <li><b>Le harnais ignore le fournisseur</b> — redémarrez-le : il lit sa configuration au démarrage.</li>
+      </ul>`]
+  ],
+  en: [
+    ['What it does', `
+      <p>It probes an OpenAI-compatible API (<code>http://ip:port/v1</code>), derives the context window,
+      modalities and exposed model, then writes a ready-to-use provider into <b>opencode</b>,
+      <b>Hermes Agent</b> and <b>dsh</b>.</p>
+      <p>Why a local bridge? Two things are impossible from a <code>file://</code> page: the browser blocks
+      <code>fetch()</code> to the API (origin is <code>null</code>, the server sends no
+      <code>Access-Control-Allow-Origin</code>) and it has no reliable disk access.
+      <code>LLMBridge</code> does both server-side, on <code>127.0.0.1</code> only.</p>`],
+    ['Three ways to run it', `
+      <table><tr><th>Mode</th><th>Command</th><th>When</th></tr>
+      <tr><td><b>Binary</b></td><td><code>LLMBridge.exe</code></td><td>nothing to install, double-click</td></tr>
+      <tr><td><b>Script</b></td><td><code>python app.py</code></td><td>Python 3.10+, no build</td></tr>
+      <tr><td><b>Development</b></td><td><code>python app.py --html web/index.html</code></td><td>edit the UI without rebuilding</td></tr>
+      </table>
+      <p class="note">Options: <code>--root DIR</code>, <code>--port N</code>, <code>--no-browser</code>,
+      <code>--insecure</code> (self-signed TLS), <code>--list</code>.</p>`],
+    ['Verified versions', `
+      <table><tr><th>Harness</th><th>Tested version</th><th>What is written</th></tr>
+      <tr><td>opencode</td><td><b>2.1.4</b></td><td><code>providers.*</code> (settings, models, limit, compatibility)</td></tr>
+      <tr><td>Hermes Agent</td><td><b>0.22.5</b> (config v51)</td><td><code>custom_providers[]</code> + <code>model:</code> block</td></tr>
+      <tr><td>dsh</td><td><b>0.2.1-rc.2</b></td><td><code>llm-pi-ai → providers</code> + <code>agent-default-model</code></td></tr>
+      </table>
+      <p>Card badges show the version actually detected on this machine and flag unverified ones.
+      If a harness moves on, the tool keeps working: the file shape matters, not the number.</p>`],
+    ['Paths', `
+      <p>By default the tool looks under your home directory:</p>
+      <ul>
+        <li><code>~/.config/opencode/opencode.jsonc</code></li>
+        <li><code>~/.hermes/config.yaml</code> and <code>~/.hermes/.env</code></li>
+        <li><code>~/.dsh/cordis.patch.yml</code> and <code>~/.dsh/.env</code></li>
+      </ul>
+      <p>Installed elsewhere? Open “Paths” on a card and give the exact file
+      (<code>%VARS%</code>, <code>~</code> and <code>$VARS</code> are expanded). The neighbouring
+      <code>.env</code> is inferred; paths are remembered in this browser.</p>`],
+    ['Safety', `
+      <ul>
+        <li>listens on <code>127.0.0.1</code> only, <code>SameSite=Strict</code> session cookie and origin
+        check: a third-party web page cannot trigger a write;</li>
+        <li>writes restricted to files found by the last scan (and to known names);</li>
+        <li>systematic <code>.bak-&lt;timestamp&gt;</code> backup before replacing;</li>
+        <li>nothing is sent anywhere except the endpoint you probe.</li>
+      </ul>`],
+    ['Troubleshooting', `
+      <ul>
+        <li><b>UNREACHABLE</b> — IP, port or firewall. The message shows the real error
+        (<code>ConnectionRefusedError</code>, timeout…). Check the server listens on <code>0.0.0.0</code>.</li>
+        <li><b>All harnesses MISSING</b> — wrong root (different account, moved profile): the root is
+        displayed at the top. Use “Paths” or <code>--root</code>.</li>
+        <li><b>Write refused (403)</b> — the file was not seen by the last scan: rescan, or declare its path.</li>
+        <li><b>Port busy</b> — the next 12 ports are tried; otherwise start with <code>--port</code>.</li>
+        <li><b>Harness ignores the provider</b> — restart it: configuration is read at startup.</li>
+      </ul>`]
+  ]
+};
+
+function openDocs(){
+  const lang = DOCS[LANG] ? LANG : 'en';
+  const body = document.getElementById('docsBody');
+  const title = document.getElementById('docsTitle');
+  if (!body) return;
+  title.textContent = t('docs');
+  const note = DOCS[LANG] ? '' : '<p class="note">' + t('docsNote') + '</p>';
+  body.innerHTML = note + DOCS[lang].map(([h, html]) => '<h3>' + h + '</h3>' + html).join('');
+  document.getElementById('docsModal').classList.add('open');
+}
+function closeDocs(){
+  const m = document.getElementById('docsModal');
+  if (m) m.classList.remove('open');
+}
+
+/* --- application aux éléments statiques ------------------------------ */
+function applyI18n(){
+  document.documentElement.lang = LANG;
+
+  const sections = document.querySelectorAll('main > section');
+  setSectionTitle(sections[0], 's1');
+  setSectionTitle(sections[1], 's2');
+  setSectionTitle(sections[2], 's3');
+  setSectionTitle(sections[3], 's4');
+
+  const sub = document.querySelector('header .sub');
+  if (sub) sub.innerHTML = t('sub');
+  const docsBtn = document.getElementById('btnDocs');
+  if (docsBtn) docsBtn.textContent = t('docs');
+
+  const hint1 = sections[0] && sections[0].querySelector('.body > .hint');
+  if (hint1) hint1.innerHTML = t('s1hint');
+  const hint2 = sections[1] && sections[1].querySelector('.hd .hint');
+  if (hint2) hint2.textContent = t('urlhint');
+
+  const setText = (sel, key, attr) => {
+    const el = document.querySelector(sel);
+    if (!el) return;
+    if (attr) el.setAttribute(attr, t(key));
+    else el.textContent = t(key);
+  };
+  setText('#btnDetect', 'scan');
+  if (window.__bridge && window.__bridge.ok) {
+    const b = document.getElementById('btnDetect');
+    if (b) b.textContent = t('rescan') + ' · ' + window.__bridge.home;
+  }
+  setText('#btnRedetect', 'rescan');
+  setText('#btnTest', 'test');
+  setText('#btnProbeCtx', 'probewin');
+  setText('#btnPreviewAll', 'previewAll');
+  setText('#btnWriteAll', 'writeAll');
+  setText('#btnCopyPreview', 'copyPrev');
+  setText('#btnDownloadPreview', 'download');
+  setText('#btnBackup', 'backup');
+  if (!state.preview) setText('#previewTitle', 'noPreview');
+
+  const urlLabel = document.querySelector('label[for="endpoint"]');
+  if (urlLabel) urlLabel.innerHTML = t('url');
+  const keyLabel = document.querySelector('label[for="apikey"]');
+  if (keyLabel) keyLabel.textContent = t('key');
+  const keyInput = document.getElementById('apikey');
+  if (keyInput) keyInput.setAttribute('placeholder', t('keyph'));
+
+  const docsTitle = document.getElementById('docsTitle');
+  if (docsTitle) docsTitle.textContent = t('docs');
+
+  // les cartes sont générées en JS : on les redessine dans la nouvelle langue
+  if (typeof state !== 'undefined' && state.targets && state.targets.length){
+    if (typeof renderDetect === 'function') renderDetect(state.targets);
+    if (typeof renderCards === 'function') renderCards();
+  }
+  if (document.getElementById('docsModal').classList.contains('open')) openDocs();
+}
+
+function setLang(code){
+  if (!I18N[code]) code = 'en';
+  LANG = code;
+  try { localStorage.setItem('llmbridge.lang', code); } catch (e) { /* ignore */ }
+  const sel = document.getElementById('langSel');
+  if (sel) sel.value = code;
+  applyI18n();
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  const sel = document.getElementById('langSel');
+  if (sel){
+    sel.innerHTML = LANGS.map(([code, name]) => '<option value="' + code + '">' + name + '</option>').join('');
+    LANG = detectLang();
+    sel.value = LANG;
+    sel.addEventListener('change', () => setLang(sel.value));
+  }
+  const btn = document.getElementById('btnDocs');
+  if (btn) btn.addEventListener('click', openDocs);
+  const close = document.getElementById('docsClose');
+  if (close) close.addEventListener('click', closeDocs);
+  const modal = document.getElementById('docsModal');
+  if (modal) modal.addEventListener('click', e => { if (e.target === modal) closeDocs(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDocs(); });
+  applyI18n();
+});
+</script>
+
+<script>
+/* =====================================================================
+   UI — détection, sonde, cartes par harnais, aperçu, écriture, journal
+   ===================================================================== */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const FS = typeof window.showDirectoryPicker === 'function';
+const state = { root: null, targets: [], info: null, selModel: null, preview: null, busy: false };
+const esc = s => String(s == null ? '' : s).replace(/[&<>]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;' }[c]));
+const escA = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+/* Valeurs saisies, conservées à travers les re-rendus des cartes. */
+const cardValues = {};
+function loadStoredCards(){ try { const s = JSON.parse(localStorage.getItem('harnais.cards') || '{}');
+  Object.keys(s).forEach(k => cardValues[k] = s[k]); } catch (e){} }
+function storeCards(){ try { localStorage.setItem('harnais.cards', JSON.stringify(cardValues)); } catch (e){} }
+function snapshotCards(){
+  state.targets.filter(t => t.found).forEach(t => {
+    const id = t.id, store = cardValues[id] || (cardValues[id] = {});
+    (FIELDS[t.flavor] || []).forEach(f => { const el = cardEl(id, f[0]); if (el) store[f[0]] = el.type === 'checkbox' ? el.checked : el.value; });
+    const en = document.querySelector('#card-' + id + ' [data-envname]'); if (en) store.__envname = en.value;
+    const ev = document.querySelector('#card-' + id + ' [data-envval]'); if (ev) store.__envval = ev.value;
+  });
+}
+function saved(id, k){ const s = cardValues[id]; return s && s[k] !== undefined ? s[k] : ''; }
+function setEnvName(id, v){ const el = document.querySelector('#card-' + id + ' [data-envname]');
+  if (el && !el.value) el.value = v;
+  const store = cardValues[id] || (cardValues[id] = {}); if (!store.__envname) store.__envname = v; }
+const fmtN = n => (n === null || n === undefined || n === '') ? '—' : Number(n).toLocaleString('fr-FR');
+
+function logMsg(msg, cls){
+  const el = $('#log');
+  el.innerHTML += '<span class="t">' + new Date().toLocaleTimeString('fr-FR') + '</span> <span class="' + (cls || '') + '">' +
+    String(msg).replace(/</g, '&lt;') + '</span>\n';
+  el.scrollTop = el.scrollHeight;
+}
+const badge = (txt, kind) => '<span class="badge ' + kind + '">' + esc(txt) + '</span>';
+
+/* ------------------------------------------------------------------ */
+/* 1. DÉTECTION                                                        */
+/* ------------------------------------------------------------------ */
+async function pickRoot(){
+  if (!FS){ logMsg('Ce navigateur ne connaît pas showDirectoryPicker — ouvre le fichier avec Chrome ou Edge, ou utilise « Ouvrir un fichier… » carte par carte.', 'er'); return; }
+  try {
+    /* startIn n'accepte QUE desktop|documents|downloads|music|pictures|videos (pas 'home'). */
+    let h;
+    try { h = await window.showDirectoryPicker({ id: 'harnais-root', mode: 'readwrite' }); }
+    catch (e){
+      if (e && e.name === 'TypeError') h = await window.showDirectoryPicker();   // navigateur à l'API plus ancienne
+      else throw e;
+    }
+    state.root = h;
+    await TARGETS.saveRoot(state.root);
+    await detectAndRender(state.root);
+  } catch (e){
+    if (e.name !== 'AbortError') logMsg('Choix du dossier refusé : ' + esc(e.message), 'er');
+  }
+}
+async function reuseRoot(){
+  const h = state.root || await TARGETS.loadRoot();
+  if (!h){ logMsg('Aucune autorisation mémorisée.', 'w'); return; }
+  if (await TARGETS.permission(h, 'readwrite') !== 'granted'){ logMsg('Autorisation refusée pour le dossier mémorisé — rescane en choisissant le dossier.', 'w'); return; }
+  state.root = h;
+  await detectAndRender(h);
+}
+async function detectAndRender(root){
+  $('#rootName').textContent = '· dossier : ' + (root.name || '?');
+  $('#btnRedetect').disabled = false;
+  $('#detectOut').innerHTML = '<span class="spin"></span> <span class="dim">recherche des fichiers de configuration…</span>';
+  const deep = $('#deepScan') ? $('#deepScan').checked : false;
+  let list;
+  try { list = await TARGETS.detect(root, { deep }); }
+  catch (e){ $('#detectOut').innerHTML = '<span class="err">Détection impossible : ' + esc(e.message) + '</span>'; return; }
+  state.targets = list;
+  renderDetect(list);
+  renderCards();
+  const n = list.filter(t => t.found).length;
+  logMsg('Détection : ' + n + ' harnais trouvé(s) sur ' + list.length + ' recherchés (' +
+    list.filter(t => t.found).map(t => t.file.path).join(', ') + ')', n ? 'ok' : 'w');
+  if (state.info) autoFillCards();
+}
+function renderDetect(list){
+  const rows = list.map(h => {
+    const s = h.summary;
+    const provs = s && s.providers ? s.providers : [];
+    return '<tr>' +
+      '<td><b style="color:' + h.color + '">' + esc(h.label) + '</b><div class="hint">' + esc(h.note) + '</div></td>' +
+      '<td class="mono">' + (h.found ? esc(h.file.path) + '<div class="hint">' + h.file.size + ' o</div>' : '<span class="dim">' + t('absent') + '</span>') + '</td>' +
+      '<td>' + (h.found ? badge(t('found'), 'b-ok') : badge(t('absent'), 'b-mut')) +
+          (h.env ? (h.env.handle ? badge('.env', 'b-mut') : badge('.env ' + t('absent').toLowerCase(), 'b-mut')) : '') + '</td>' +
+      '<td>' + (provs.length ? provs.map(p => '<div class="mono">' + esc(p.key) + (p.base ? ' <span class="dim">→ ' + esc(p.base) + '</span>' : '') + '</div>').join('') : '<span class="dim">—</span>') + '</td>' +
+      '<td class="mono">' + (s && s.active ? esc(s.active) : '<span class="dim">—</span>') + '</td>' +
+      '<td><button class="mini" data-open="' + h.id + '">' + t('openOther') + '</button></td></tr>';
+  }).join('');
+  $('#detectOut').innerHTML =
+    '<label class="chk" style="margin-bottom:8px" title="' + escA(t('deep')) + '"><input type="checkbox" id="deepScan"> ' + t('deep') + '</label>' +
+    '<table><thead><tr><th>' + t('thHarness') + '</th><th>' + t('thFile') + '</th><th>' + t('thState') + '</th><th>' +
+    t('thProv') + '</th><th>' + t('thActive') + '</th><th></th></tr></thead><tbody>' +
+    rows + '</tbody></table>' + (list.some(h => h.summary && h.summary.error) ?
+    '<div class="hint err">' + list.filter(h => h.summary && h.summary.error)
+      .map(h => esc(h.id + ' — ' + h.summary.error)).join(' · ') + '</div>' : '');
+  $$('#detectOut [data-open]').forEach(b => b.addEventListener('click', () => manualOpen(b.getAttribute('data-open'))));
+}
+function manualOpen(id){
+  const t = state.targets.find(x => x.id === id);
+  if (!t) return;
+  $('#filePick').dataset.target = id;
+  $('#filePick').onchange = async e => {
+    const f = e.target.files[0]; if (!f) return;
+    t.file = { name: f.name, size: f.size, text: await f.text(), path: f.name, handle: null };
+    t.found = true; t.manual = true;
+    t.summary = TARGETS.summarize(t.flavor, t.file.text);
+    logMsg('Fichier ouvert pour ' + t.label + ' : ' + esc(f.name) + ' (écriture par téléchargement)', 'i');
+    renderDetect(state.targets); renderCards(); autoFillCards();
+  };
+  $('#filePick').click();
+}
+
+/* ------------------------------------------------------------------ */
+/* 2. SONDE                                                            */
+/* ------------------------------------------------------------------ */
+function baseOf(){ return CORE.normalizeBase($('#endpoint').value); }
+async function req(url, opt){
+  opt = opt || {};
+  const key = $('#apikey').value.trim();
+  const headers = {};
+  if (opt.body) headers['Content-Type'] = 'application/json';   // seulement avec un corps : sinon preflight OPTIONS inutile
+  if (key) headers['Authorization'] = 'Bearer ' + key;
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), opt.timeout || 15000);
+  const t0 = performance.now();
+  try {
+    const r = await fetch(url, { method: opt.method || 'GET', headers, body: opt.body ? JSON.stringify(opt.body) : undefined, signal: ac.signal });
+    const text = await r.text();
+    let json = null; try { json = JSON.parse(text); } catch (e){}
+    const h = {}; try { r.headers.forEach((v, k) => h[k] = v); } catch (e){}
+    return { ok: r.ok, status: r.status, ms: Math.round(performance.now() - t0), text, json, headers: h };
+  } finally { clearTimeout(timer); }
+}
+/* Distingue « bloqué par le CORS » de « serveur injoignable ». */
+async function classify(url){
+  try { const r = await fetch(url, { mode: 'no-cors', signal: AbortSignal.timeout(8000) });
+        return { reachable: true, opaque: r.type === 'opaque' }; }
+  catch (e){ return { reachable: false, error: e.name + ': ' + e.message }; }
+}
+async function probe(){
+  const base = baseOf();
+  $('#endpoint').value = base;
+  const out = $('#probeOut');
+  if (!/^https?:\/\//i.test(base)){ out.innerHTML = '<span class="err">URL invalide.</span>'; return; }
+  $('#btnTest').disabled = true;
+  out.innerHTML = '<span class="spin"></span> <span class="dim">sonde de ' + esc(base) + ' …</span>';
+  const probes = [];
+  let modelsRaw = null, res = null;
+  const root = base.replace(/(\/v\d+)$/i, '');
+  try {
+    res = await req(base + '/models', { timeout: 20000 });
+    probes.push(['GET /models', res.status + ' · ' + res.ms + ' ms', res.ok]);
+    if (res.ok) modelsRaw = res.text;
+  } catch (e){
+    const c = await classify(base + '/models');
+    out.innerHTML = diagHtml(base, c, e);
+    $('#btnTest').disabled = false;
+    logMsg(c.reachable ? 'Serveur joint mais origine non autorisée (CORS) sur ' + esc(base)
+                       : 'Serveur injoignable : ' + esc(c.error), c.reachable ? 'w' : 'er');
+    return;
+  }
+  let propsRaw = null, detailRaw = null, ollamaRaw = null;
+  const tryGet = async (url, label) => {
+    try { const r = await req(url, { timeout: 6000 }); probes.push([label, r.status + ' · ' + r.ms + ' ms', r.ok]); return r.ok ? r.text : null; }
+    catch (e){ probes.push([label, '—', false]); return null; }
+  };
+  if (res.ok){
+    propsRaw = await tryGet(root + '/props', 'GET /props (llama.cpp)');
+    const first = (safeJson(modelsRaw) || {}).data;
+    if (Array.isArray(first) && first[0]) detailRaw = await tryGet(base + '/models/' + encodeURIComponent(first[0].id || ''), 'GET /models/:id');
+  } else {
+    propsRaw = await tryGet(root + '/props', 'GET /props');
+    ollamaRaw = await tryGet(root + '/api/tags', 'GET /api/tags (ollama)');
+  }
+  const info = CORE.extractInfo({ base, modelsRaw, propsRaw, ollamaRaw, detailRaw });
+  info.httpStatus = res.status; info.latency = res.ms; info.probes = probes;
+  info.serverHeader = res.headers && (res.headers['server'] || null);
+  info.base = base;
+  state.info = info; state.selModel = info.models[0] || null;
+  if (!res.ok && !info.models.length){
+    out.innerHTML = badge('HTTP ' + res.status, 'b-err') + ' <span class="dim">' + esc(res.text.slice(0, 300)) + '</span>' + probesTable(probes);
+    logMsg('HTTP ' + res.status + ' sur /models', 'er'); $('#btnTest').disabled = false; return;
+  }
+  renderProbe(info);
+  autoFillCards();
+  logMsg('API répond · ' + info.models.length + ' modèle(s) · ' + info.latency + ' ms · fenêtre ' + fmtN(info.context), 'ok');
+  $('#btnTest').disabled = false;
+}
+const safeJson = t => { try { return JSON.parse(t); } catch (e){ return null; } };
+function diagHtml(base, c, e){
+  return badge(c.reachable ? 'RÉPOND MAIS BLOQUÉ' : 'INJOIGNABLE', 'b-err') +
+    '<div class="hint" style="margin-top:8px">' + esc(e.name) + ' : ' + esc(e.message) + ' sur <span class="mono">' + esc(base) + '/models</span></div>' +
+    (c.reachable
+      ? '<div class="hint">Le serveur répond mais refuse l’origine de la page (<span class="mono">Origin: null</span> en <span class="mono">file://</span>).<br>' +
+        '• llama-server&nbsp;: <span class="mono">--cors "*"</span> &nbsp;• vLLM&nbsp;: <span class="mono">--allow-origin "*"</span> &nbsp;• Ollama&nbsp;: <span class="mono">OLLAMA_ORIGINS=*</span> &nbsp;• LM Studio&nbsp;: cocher CORS.<br>' +
+        'Sans toucher au serveur&nbsp;: bouton <b>Coller /models</b>, ou Chrome lancé avec <span class="mono">--disable-web-security --user-data-dir=%TEMP%\\chromecors</span>.</div>'
+      : '<div class="hint">Vérifie l’IP, le port, que le serveur écoute sur <span class="mono">0.0.0.0</span> (et pas 127.0.0.1) s’il est sur une autre machine, ' +
+        'et le pare-feu Windows (réseau public = entrants bloqués). Teste d’abord depuis la machine du serveur avec <span class="mono">http://127.0.0.1:port/v1</span>.</div>');
+}
+function probesTable(probes){
+  return '<div class="hint" style="margin-top:8px">Probes&nbsp;: ' + (probes || []).map(p =>
+    badge(p[0] + ' ' + p[1], p[2] ? 'b-ok' : 'b-mut')).join(' ') + '</div>';
+}
+function renderProbe(info){
+  const rows = info.models.map((m, i) => {
+    const sel = state.selModel ? state.selModel.id === m.id : i === 0;
+    return '<tr class="click" data-id="' + esc(m.id) + '"><td><input type="radio" name="mrow" ' + (sel ? 'checked' : '') + '></td>' +
+      '<td class="mono">' + esc(m.id) + '</td><td class="mono">' + (m.context ? fmtN(m.context) : '<span class="dim">—</span>') + '</td>' +
+      '<td class="mono">' + (m.output ? fmtN(m.output) : '<span class="dim">—</span>') + '</td><td>' + esc(m.owned_by || '') + '</td>' +
+      '<td><button class="mini ghost" data-detail="' + esc(m.id) + '">detail</button></td></tr>';
+  }).join('');
+  $('#probeOut').innerHTML =
+    '<div class="bar" style="margin-bottom:8px">' + badge('API OK', 'b-ok') + badge('HTTP ' + info.httpStatus, 'b-mut') +
+    badge(info.latency + ' ms', 'b-mut') + (info.serverHeader ? badge('server: ' + info.serverHeader, 'b-mut') : '') +
+    (info.build ? badge(info.build, 'b-mut') : '') +
+    (info.context ? badge('ctx ' + fmtN(info.context), 'b-ok') : badge('ctx unknown', 'b-warn')) +
+    (info.modalities ? badge('modalités ' + JSON.stringify(info.modalities), 'b-mut') : '') +
+    '<button class="mini" id="btnPaste">Paste /models (CORS)</button>' +
+    '<button class="mini" id="btnGen2">Test a generation</button></div>' +
+    (info.modelPath ? '<div class="hint">server model&nbsp;: <span class="mono">' + esc(info.modelPath) + '</span></div>' : '') +
+    '<table><thead><tr><th></th><th>exposed id</th><th>context</th><th>output</th><th>owner</th><th></th></tr></thead><tbody>' +
+    (rows || '<tr><td colspan="6" class="dim">no model listed</td></tr>') + '</tbody></table>' + probesTable(info.probes) +
+    (info.notes.length ? '<div class="hint">' + info.notes.map(n => '• ' + esc(n)).join('<br>') + '</div>' : '') +
+    '<div class="row" style="margin-top:8px"><div class="g1"><input id="genPrompt" type="text" value="Réponds uniquement par: OK {model}" placeholder="message de test"></div>' +
+    '<div class="g3"><input id="genMax" type="number" value="32" title="max_tokens"></div><div id="genOut" class="g1"></div></div>' +
+    '<div id="detail"></div>';
+  $$('#probeOut tbody tr').forEach(tr => tr.addEventListener('click', () => {
+    state.selModel = info.models.find(m => m.id === tr.getAttribute('data-id')) || null;
+    autoFillCards(true);
+    logMsg('model selected: ' + esc(state.selModel && state.selModel.id), 'i');
+  }));
+  $$('[data-detail]').forEach(b => b.addEventListener('click', async ev => {
+    ev.stopPropagation();
+    const id = b.getAttribute('data-detail');
+    try { const r = await req(baseOf() + '/models/' + encodeURIComponent(id), { timeout: 8000 });
+      $('#detail').innerHTML = '<details open><summary class="dim mono" style="cursor:pointer">' + esc(id) + ' — HTTP ' + r.status +
+        '</summary><pre>' + esc(JSON.stringify(r.json || r.text, null, 2).slice(0, 6000)) + '</pre></details>';
+    } catch (e){ $('#detail').innerHTML = '<div class="err">detail failed: ' + esc(e.message) + '</div>'; }
+  }));
+  $('#btnPaste').addEventListener('click', pasteModels);
+  $('#btnGen2').addEventListener('click', gen);
+}
+async function pasteModels(){
+  const txt = prompt('Colle la réponse JSON de /models (récupérée avec curl, ou ouvres http://ip:port/v1/models dans un onglet) :');
+  if (!txt) return;
+  const info = CORE.extractInfo({ base: baseOf(), modelsRaw: txt });
+  info.httpStatus = 200; info.latency = 0; info.probes = [['collé manuellement', '—', true]]; info.base = baseOf();
+  state.info = Object.assign(info, { probes: info.probes }); state.selModel = info.models[0] || null;
+  renderProbe(state.info); autoFillCards(true);
+  logMsg('liste /models collée : ' + info.models.length + ' modèle(s)', 'i');
+}
+async function gen(){
+  const base = baseOf(), model = state.selModel ? state.selModel.id : '';
+  const out = $('#genOut');
+  if (!base || !model){ out.innerHTML = '<span class="err">endpoint/modèle manquants</span>'; return; }
+  out.innerHTML = '<span class="spin"></span> <span class="dim">génération…</span>';
+  try {
+    const r = await req(base + '/chat/completions', { method: 'POST', timeout: 60000, body: {
+      model, stream: false, max_tokens: Number($('#genMax').value) || 32,
+      messages: [{ role: 'user', content: ($('#genPrompt').value || 'OK').replace('{model}', model) }] } });
+    const ch = r.json && r.json.choices && r.json.choices[0];
+    const txt = ch && ((ch.message && (ch.message.content || ch.message.reasoning_content)) || ch.text) || '';
+    out.innerHTML = '<div class="bar">' + badge(r.ok ? 'OK' : 'HTTP ' + r.status, r.ok ? 'b-ok' : 'b-err') +
+      badge(r.ms + ' ms', 'b-mut') + (r.json && r.json.usage ? badge((r.json.usage.total_tokens || '?') + ' jetons', 'b-mut') : '') + '</div>' +
+      '<pre style="max-height:180px">' + esc(txt || JSON.stringify(r.json || r.text, null, 2).slice(0, 1200)) + '</pre>';
+    logMsg(r.ok ? 'génération OK en ' + r.ms + ' ms' : 'génération HTTP ' + r.status, r.ok ? 'ok' : 'er');
+  } catch (e){
+    const c = await classify(base + '/chat/completions');
+    out.innerHTML = '<span class="err">' + esc(e.name) + ' : ' + esc(e.message) + '</span>' + (c.reachable ? ' <span class="hint">serveur joint, CORS refusé ici aussi</span>' : '');
+    logMsg('génération impossible : ' + esc(e.message), 'er');
+  }
+}
+async function probeCtx(){
+  const base = baseOf(), model = state.selModel ? state.selModel.id : '';
+  if (!base || !model){ logMsg('Endpoint ou modèle manquant pour la sonde.', 'w'); return; }
+  if (!confirm('La sonde envoie max_tokens = 1 073 741 824.\n\n• llama.cpp / vLLM : répondent HTTP 400 avec la taille de fenêtre, sans générer.\n• Un serveur qui PLAFONNE au lieu de rejeter peut lancer une génération longue (coupée ici à 25 s, mais le serveur travaille).\n\nContinuer ?')) return;
+  $('#btnProbeCtx').disabled = true;
+  try {
+    const r = await req(base + '/chat/completions', { method: 'POST', timeout: 25000, body: {
+      model, messages: [{ role: 'user', content: 'x' }], max_tokens: 1073741824, stream: false } });
+    const got = CORE.extractInfo({ base, probeRaw: r.text, probeErr: r.text });
+    if (got.probed){
+      if (state.info){ state.info.probed = got.probed; state.info.context = got.probed; }
+      $$('input[data-k="ctx"]').forEach(el => { el.value = got.probed; });
+      logMsg('fenêtre détectée : ' + fmtN(got.probed) + ' (message HTTP ' + r.status + ' du serveur) — reportée dans les cartes', 'ok');
+      renderProbe(state.info);
+    } else logMsg('sonde sans résultat : HTTP ' + r.status + ' — ce serveur plafonne au lieu de rejeter.', 'w');
+  } catch (e){ logMsg('sonde échouée : ' + esc(e.message), 'er'); }
+  $('#btnProbeCtx').disabled = false;
+}
+
+/* ------------------------------------------------------------------ */
+/* 3. CARTES                                                           */
+/* ------------------------------------------------------------------ */
+const FIELDS = {
+  opencode: [
+    ['providerId', 'fProviderId', 'g3', 'text'], ['providerName', 'fProviderName', 'g2', 'text'],
+    ['baseURL2', 'fBaseURL2', 'g1', 'text'],
+    ['pkg', 'fPkg', 'g2', 'select', ['@opencode-ai/ai/providers/openai-compatible', '@ai-sdk/openai-compatible']],
+    ['malias', 'fMalias', 'g2', 'text'], ['mid', 'fMid', 'g2', 'text'],
+    ['mname', 'fMname', 'g2', 'text'],
+    ['ctx', 'fCtx', 'g3', 'number'], ['out', 'fOut', 'g3', 'number'],
+    ['rfield', 'fRfield', 'g3', 'select', ['reasoning_content', 'reasoning', '']],
+    ['ht', 'fHt', 'g3', 'number'], ['ct', 'fCt', 'g3', 'number'],
+    ['capTools', 'fCapTools', 'g2', 'check'], ['capImg', 'fCapImg', 'g2', 'check'],
+    ['setAsModel', 'fSetAsModel', 'g2', 'check'],
+    ['bodyJson', 'fBodyJson', 'g2', 'textarea'],
+    ['variantsJson', 'fVariantsJson', 'g2', 'textarea']
+  ],
+  hermes: [
+    ['providerId', 'fProviderId', 'g2', 'text'], ['baseURL2', 'fBaseURL2', 'g2', 'text'],
+    ['model', 'fModel', 'g2', 'text'],
+    ['ctx', 'fCtx', 'g3', 'number'],
+    ['allModels', 'fAllModels', 'g2', 'check'],
+    ['setActive', 'fSetActive', 'g2', 'check']
+  ],
+  dsh: [
+    ['providerId', 'fProviderId', 'g2', 'text'], ['providerName', 'fProviderName', 'g2', 'text'],
+    ['baseURL2', 'fBaseURL2', 'g2', 'text'],
+    ['model', 'fModel', 'g2', 'text'],
+    ['ctx', 'fCtx', 'g3', 'number'], ['out', 'fOut', 'g3', 'number'],
+    ['idle', 'fIdle', 'g3', 'number'], ['dmt', 'fDmt', 'g3', 'number'],
+    ['thinking', 'fThinking', 'g2', 'check'], ['preserve', 'fPreserve', 'g2', 'check'],
+    ['efforts', 'fEfforts', 'g2', 'textarea'],
+    ['effortDef', 'fEffortDef', 'g3', 'text'],
+    ['allModels', 'fAllModels', 'g2', 'check'],
+    ['setActive', 'fSetActive', 'g2', 'check']
+  ]
+};
+/* Une seule formulation par mode : le détail par harnais est dans la documentation
+   intégrée, et l'aperçu montre exactement ce qui sera supprimé. */
+const MODE_KEYS = [['add', 'mAdd', 'mAddD'], ['replace', 'mRep', 'mRepD'], ['reset', 'mRes', 'mResD']];
+function versionBadge(id){
+  const v = state.versions && state.versions.detected && state.versions.detected[id];
+  if (!v || !v.raw) return badge(t('verUnknown'), 'b-mut');
+  const short = String(v.raw).replace(/^[A-Za-z0-9_.-]+\s+/, '').slice(0, 30);
+  const tip = (v.match ? t('verVerified') : t('verMismatch')) + ' — ' + v.raw;
+  return '<span class="badge ' + (v.match ? 'b-ok' : 'b-warn') + '" title="' + escA(tip) + '">' +
+         esc(short) + '</span>';
+}
+function cardHtml(h){
+  const id = h.id;
+  const fields = FIELDS[h.flavor].map(f => fieldHtml(id, f)).join('');
+  const chosen = savedMode(id);
+  const modes = MODE_KEYS.map((m) => {
+    const on = m[0] === chosen;
+    return '<label class="' + (on ? 'on' : '') + '" data-card="' + id + '" data-mode="' + m[0] + '">' +
+      '<input type="radio" name="mode-' + id + '" value="' + m[0] + '"' + (on ? ' checked' : '') + '>' +
+      '<span><b>' + esc(t(m[1])) + '</b><small>' + t(m[2]) + '</small></span></label>';
+  }).join('');
+  const provs = (h.summary && h.summary.providers || []);
+  const chips = provs.map(p =>
+    '<span class="chip" data-chip="' + id + '|' + esc(p.key) + '">' + esc(p.key) +
+    (p.base ? ' → ' + esc(p.base) : '') + '</span>').join(' ') ||
+    '<span class="dim">' + t('none') + '</span>';
+  return '<div class="card" id="card-' + id + '">' +
+    '<div class="hd"><b style="color:' + h.color + '">' + esc(h.label) + '</b>' +
+      versionBadge(id) +
+      badge(h.file.path, 'b-mut') +
+      (h.custom ? badge(t('pathCustom'), 'b-acc') : '') +
+      badge(provs.length + ' ' + t('thProv').toLowerCase(), 'b-mut') +
+      (h.summary && h.summary.active ? badge(t('thActive') + ': ' + h.summary.active, 'b-acc') : '') +
+      '<label class="chk" title="' + escA(t('include') + ' — ' + t('writeAll')) + '">' +
+        '<input type="checkbox" data-include="' + id + '" checked> ' + t('include') + '</label>' +
+      '<span style="flex:1"></span>' +
+      '<button class="mini" data-refill="' + id + '">' + t('recalc') + '</button>' +
+      '<button class="mini" data-preview="' + id + '">' + t('preview') + '</button>' +
+      '<button class="mini danger" data-write="' + id + '" disabled>' + t('write') + '</button></div>' +
+    '<div class="bd">' +
+      '<div class="modes" style="margin-bottom:10px">' + modes + '</div>' +
+      '<div class="row">' + fields + '</div>' +
+      '<div class="hint">' + t('declared') + ' ' + chips + '</div>' +
+      envHtml(h) +
+    '</div></div>';
+}
+function fieldHtml(id, f){
+  const k = f[0], label = esc(t(f[1])), span = f[2] || 'g2', type = f[3] || 'text', opts = f[4];
+  const key = 'data-k="' + k + '" data-cardref="' + id + '"';
+  const v = saved(id, k);
+  if (type === 'check') return '<div class="' + span + '"><label class="chk" title="' + escA(t(f[1])) + '"><input type="checkbox" ' + key + (v ? ' checked' : '') + '> ' + label + '</label></div>';
+  if (type === 'select') return '<div class="' + span + '"><label title="' + escA(t(f[1])) + '">' + label + '</label><select ' + key + '>' +
+    opts.map(o => '<option value="' + escA(o) + '"' + (String(v) === String(o) ? ' selected' : '') + '>' + (o === '' ? t('none') : esc(o)) + '</option>').join('') + '</select></div>';
+  if (type === 'textarea') return '<div class="' + span + '"><label title="' + escA(t(f[1])) + '">' + label + '</label><textarea rows="2" spellcheck="false" ' + key + '>' + esc(v) + '</textarea></div>';
+  return '<div class="' + span + '"><label title="' + escA(t(f[1])) + '">' + label + '</label><input type="' + (type === 'number' ? 'number' : 'text') +
+    '" spellcheck="false" step="' + (type === 'number' ? '1' : '') + '" value="' + escA(v) + '" ' + key + '></div>';
+}
+function envHtml(h){
+  if (!h.envPath) return '';
+  const has = h.env && h.env.handle;
+  const names = h.env && h.env.text ? YCORE.envFacts(h.env.text).names : [];
+  return '<div class="env"><div class="bar"><b class="mono" style="font-size:12px">' + esc(h.envPath) + '</b>' +
+    (has ? badge(t('envFound'), 'b-mut') : badge(t('envMissing'), 'b-warn')) +
+    '<span class="hint">' + t('envHint') + '</span></div>' +
+    '<div class="row" style="margin-top:8px;margin-bottom:0"><div class="g2"><label>' + t('envVar') +
+      '</label><input type="text" data-envname="' + h.id + '" spellcheck="false" title="' + escA(t('envVar')) +
+      '" value="' + escA(saved(h.id, '__envname')) + '"></div>' +
+    '<div class="g1"><label>' + t('envVal') + '</label><input type="password" data-envval="' + h.id +
+      '" spellcheck="false" title="' + escA(t('envVal')) + '" value="' + escA(saved(h.id, '__envval')) + '"></div>' +
+    '<div class="g4" style="align-self:flex-end"><button class="mini" data-envwrite="' + h.id + '" ' +
+      (has ? '' : 'disabled') + '>' + t('envWrite') + '</button>' +
+    '<button class="mini ghost" data-envcopy="' + h.id + '">' + t('envCopy') + '</button></div></div>' +
+    (names.length ? '<div class="hint">' + t('envExisting') + '&nbsp;: ' +
+      names.slice(0, 12).map(n => '<span class="mono">' + esc(n) + '</span>').join(', ') +
+      (names.length > 12 ? '…' : '') + '</div>' : '') + '</div>';
+}
+/* Deux libellés qui n'ont pas leur place dans les dictionnaires de l'interface
+   (états vides) : ajoutés ici pour ne pas multiplier les fichiers. */
+Object.assign(I18N.fr, { noCards: 'Revenez à l’étape 1 : aucun fichier de configuration détecté (ou ouvrez un fichier à la main).' });
+Object.assign(I18N.en, { noCards: 'Go back to step 1: no configuration file detected (or open one by hand).' });
+Object.assign(I18N.de, { noCards: 'Zurück zu Schritt 1: keine Konfigurationsdatei gefunden (oder Datei manuell öffnen).' });
+Object.assign(I18N.es, { noCards: 'Vuelve al paso 1: no se detectó ningún archivo de configuración (o abre uno a mano).' });
+Object.assign(I18N.it, { noCards: 'Torna al passo 1: nessun file di configurazione rilevato (o aprine uno a mano).' });
+Object.assign(I18N.pt, { noCards: 'Volte ao passo 1: nenhum ficheiro de configuração detetado (ou abra um manualmente).' });
+Object.assign(I18N.nl, { noCards: 'Terug naar stap 1: geen configuratiebestand gevonden (of open er een handmatig).' });
+Object.assign(I18N.pl, { noCards: 'Wróć do kroku 1: nie wykryto pliku konfiguracyjnego (lub otwórz go ręcznie).' });
+
+function pathsHtml(){
+  if (!state.targets.length) return '';
+  const rows = state.targets.map(h => {
+    const cur = (state.paths && state.paths[h.id]) || {};
+    const dflt = (h.defaults && h.defaults.config) || '';
+    const dfltEnv = (h.defaults && h.defaults.env) || '';
+    const line = (attr, label, value, ph, ok) =>
+      '<div class="pathline"><label>' + esc(label) + '</label>' +
+      '<input type="text" spellcheck="false" ' + attr + '="' + h.id + '" placeholder="' + escA(ph) +
+        '" value="' + escA(value) + '" title="' + escA(ph) + '">' +
+      '<span class="' + (ok ? 'pathok' : 'pathko') + '" title="' + escA(ok ? t('found') : t('absent')) + '">' +
+        (ok ? '✓' : '✗') + '</span></div>';
+    return line('data-pathcfg', h.label + ' — ' + t('pathCfg'), cur.config || '', dflt, h.found) +
+           (h.envPath ? line('data-pathenv', h.label + ' — ' + t('pathEnv'), cur.env || '', dfltEnv,
+                             !!(h.env && h.env.handle)) : '');
+  }).join('');
+  return '<details id="pathsBox" class="card"><summary style="cursor:pointer;padding:7px 2px;color:var(--dim);font-size:12px">' +
+    '⚙ ' + esc(t('paths')) + '</summary><div class="bd">' + rows +
+    '<div class="bar" style="margin-top:10px"><button class="mini" data-pathreset="1">' + t('pathReset') + '</button>' +
+    '<button class="mini primary" data-pathapply="1">' + t('rescan') + '</button></div></div></details>';
+}
+function renderCards(){
+  snapshotCards(); storeCards();
+  const list = state.targets.filter(t => t.found);
+  $('#cards').innerHTML = pathsHtml() + (list.length ? list.map(cardHtml).join('')
+    : '<span class="dim">' + t('noCards') + '</span>');
+  wireCards();
+  if (state.info) autoFillCards();
+  $('#btnWriteAll').disabled = !list.some(t => t.file && t.file.handle);
+}
+function wireCards(){
+  $$('#cards .modes label').forEach(lb => lb.addEventListener('click', () => {
+    const card = lb.getAttribute('data-card');
+    $$('#cards .modes label[data-card="' + card + '"]').forEach(x => x.classList.remove('on'));
+    lb.classList.add('on');
+    lb.querySelector('input').checked = true;
+    const st = cardValues[card] || (cardValues[card] = {}); st.__mode = lb.getAttribute('data-mode'); storeCards();
+  }));
+  $$('#cards [data-preview]').forEach(b => b.addEventListener('click', () => previewTarget(b.getAttribute('data-preview'))));
+  $$('#cards [data-write]').forEach(b => b.addEventListener('click', () => writeTarget(b.getAttribute('data-write'))));
+  $$('#cards [data-refill]').forEach(b => b.addEventListener('click', () => { filled[b.getAttribute('data-refill')] = false; autoFillCards(true); }));
+  $$('#cards [data-chip]').forEach(c => c.addEventListener('click', () => useChip(c.getAttribute('data-chip'))));
+  $$('#cards [data-envwrite]').forEach(b => b.addEventListener('click', () => writeEnv(b.getAttribute('data-envwrite'))));
+  $$('#cards [data-envcopy]').forEach(b => b.addEventListener('click', () => copyEnvLine(b.getAttribute('data-envcopy'))));
+  $$('#cards [data-k], [data-envname], [data-envval]').forEach(el => {
+    const id = el.getAttribute('data-cardref') || el.getAttribute('data-envname') || el.getAttribute('data-envval');
+    const k = el.getAttribute('data-k') || (el.hasAttribute('data-envname') ? '__envname' : '__envval');
+    el.addEventListener('input', () => {
+      const store = cardValues[id] || (cardValues[id] = {});
+      store[k] = el.type === 'checkbox' ? el.checked : el.value;
+      storeCards();
+      const b = $('#cards [data-write="' + id + '"]'); if (b) b.disabled = true;
+    });
+  });
+  /* chemins personnalisés : mémorisés, appliqués au prochain scan */
+  $$('#cards [data-pathcfg], #cards [data-pathenv]').forEach(el => {
+    el.addEventListener('input', () => {
+      const id = el.getAttribute('data-pathcfg') || el.getAttribute('data-pathenv');
+      const field = el.hasAttribute('data-pathcfg') ? 'config' : 'env';
+      state.paths = state.paths || {};
+      const cur = state.paths[id] || (state.paths[id] = {});
+      cur[field] = el.value.trim();
+      if (!cur.config) delete state.paths[id];
+      try { localStorage.setItem('llmbridge.paths', JSON.stringify(state.paths)); } catch (e) { /* ignore */ }
+    });
+  });
+  const rescan = () => { if (window.__bridgeScan) window.__bridgeScan(); };
+  const reset = $('#cards [data-pathreset]');
+  if (reset) reset.addEventListener('click', () => {
+    state.paths = {};
+    try { localStorage.removeItem('llmbridge.paths'); } catch (e) { /* ignore */ }
+    rescan();
+  });
+  const apply = $('#cards [data-pathapply]');
+  if (apply) apply.addEventListener('click', rescan);
+}
+function cardEl(id, k){ return document.querySelector('#cards [data-k="' + k + '"][data-cardref="' + id + '"]'); }
+function setVal(id, k, v){ const el = cardEl(id, k); if (!el || v === undefined || v === null) return;
+  if (el.type === 'checkbox') el.checked = !!v; else el.value = v;
+  const st = cardValues[id] || (cardValues[id] = {}); st[k] = el.type === 'checkbox' ? el.checked : el.value; storeCards(); }
+function getVal(id, k){ const el = cardEl(id, k); return el ? (el.type === 'checkbox' ? el.checked : el.value.trim()) : ''; }
+const filled = {};
+function autoFillCards(force){
+  const info = state.info; if (!info) return;
+  const put = (id, k, v) => { if (force || !String(getVal(id, k) || '').length) setVal(id, k, v); };
+  const m = state.selModel || info.models[0];
+  state.targets.filter(t => t.found).forEach(t => {
+    const id = t.id;
+    if (filled[id] && !force) return;
+    const known = savedMode(id) === 'add' ? (t.summary && t.summary.providers || []).map(p => p.key) : [];
+    const d = TARGETS.defaults(info.base, m && m.id, known);
+    const ctx = (m && m.context) || info.context || info.probed || '';
+    const budget = ctx ? Math.min(32768, Math.floor(Number(ctx) / 4)) : '';
+    const image = CORE.hasVision(info.modalities);
+    const modelId = m ? m.id : '';
+    const alias = TARGETS.slug(modelId).slice(0, 48);
+    if (t.flavor === 'opencode'){
+      put(id, 'providerId', d.id); put(id, 'providerName', d.name); put(id, 'baseURL2', info.base);
+      put(id, 'malias', alias); put(id, 'mid', modelId); put(id, 'mname', modelId.split('/').pop());
+      put(id, 'ctx', ctx); put(id, 'out', budget);
+      if (info.chatTemplate) put(id, 'rfield', 'reasoning_content');
+      put(id, 'ht', 900000); put(id, 'ct', 300000);
+      setVal(id, 'capTools', true); setVal(id, 'capImg', image); setVal(id, 'setAsModel', true);
+      setEnvName(id, d.keyEnv);
+    } else if (t.flavor === 'hermes'){
+      put(id, 'providerId', d.id); put(id, 'baseURL2', info.base); put(id, 'model', modelId);
+      put(id, 'ctx', ctx); put(id, 'allModels', true); put(id, 'setActive', true);
+      setEnvName(id, d.hermesKeyEnv);
+    } else {
+      put(id, 'providerId', d.id); put(id, 'providerName', d.name); put(id, 'baseURL2', info.base);
+      put(id, 'model', modelId);
+      put(id, 'ctx', ctx); put(id, 'out', budget); put(id, 'idle', 1800000);
+      put(id, 'thinking', true); put(id, 'preserve', false); put(id, 'allModels', true);
+      setVal(id, 'setActive', true); put(id, 'effortDef', 'high');
+      put(id, 'efforts', 'off=none\nlow=low\nhigh=high\nmax=max');
+      setEnvName(id, TARGETS.upper(d.id) + '_API_KEY');
+    }
+    filled[id] = true;
+  });
+}
+function useChip(spec){
+  const id = spec.split('|')[0], key = spec.split('|').slice(1).join('|');
+  const t = state.targets.find(x => x.id === id); if (!t) return;
+  const p = (t.summary.providers || []).find(x => x.key === key); if (!p) return;
+  setVal(id, 'providerId', p.key);
+  if (p.base) setVal(id, 'baseURL2', p.base);
+  if (p.env){ const en = $('#card-' + id + ' [data-envname]'); if (en) en.value = p.env; }
+  if (p.model) setVal(id, 'model', p.model);
+  logMsg('Carte ' + t.label + '&nbsp;: valeurs reprises depuis le fournisseur existant « ' + esc(key) + ' »', 'i');
+}
+
+/* Options d’écriture à partir d’une carte. */
+function cardOptions(t){
+  const id = t.id;
+  const num = k => { const v = getVal(id, k); return v === '' ? null : Number(v); };
+  const base = CORE.normalizeBase(getVal(id, 'baseURL2') || baseOf());
+  const apiKey = $('#apikey').value.trim();
+  const info = state.info, m = state.selModel || (info && info.models[0]);
+  const exposed = (info && info.models || []).map(x => x.id);
+  const modelId = getVal(id, 'model') || getVal(id, 'mid') || (m && m.id) || '';
+  const common = { baseURL: base, apiKey: apiKey };
+  if (t.flavor === 'opencode'){
+    let body = null, variants = null, headers = null;
+    try { body = CORE.parseJsonField('body', getVal(id, 'bodyJson'), 'object'); }
+    catch (e){ throw new Error(t.label + ' : ' + e.message); }
+    try { variants = CORE.parseJsonField('variants', getVal(id, 'variantsJson'), 'array'); }
+    catch (e){ throw new Error(t.label + ' : ' + e.message); }
+    return Object.assign(common, {
+      mode: modeOf(id), providerId: getVal(id, 'providerId'), providerName: getVal(id, 'providerName') || getVal(id, 'providerId'),
+      package: getVal(id, 'pkg'), alias: getVal(id, 'malias'), modelID: getVal(id, 'mid'), modelName: getVal(id, 'mname'),
+      context: num('ctx'), output: num('out'), tools: getVal(id, 'capTools'), image: getVal(id, 'capImg'),
+      reasoningField: getVal(id, 'rfield') || null, headerTimeout: num('ht'), chunkTimeout: num('ct'),
+      headers, body, variants, setAsModel: getVal(id, 'setAsModel'), overwrite: true, keepOther: true });
+  }
+  if (t.flavor === 'hermes'){
+    const envName = ($('#card-' + id + ' [data-envname]') || {}).value || '';
+    return Object.assign(common, {
+      mode: modeOf(id), name: getVal(id, 'providerId'), keyEnv: envName.trim() || null,
+      model: modelId, models: getVal(id, 'allModels') ? (exposed.length ? exposed : [modelId]) : [modelId],
+      discovered: true, setActive: getVal(id, 'setActive'), context: num('ctx') });
+  }
+  const efforts = {};
+  String(getVal(id, 'efforts') || '').split('\n').forEach(l => {
+    const m2 = /^\s*([A-Za-z0-9_.-]+)\s*[=:]\s*(.+?)\s*$/.exec(l); if (m2) efforts[m2[1]] = m2[2];
+  });
+  const models = (getVal(id, 'allModels') && exposed.length ? exposed : [modelId]).map(x => ({
+    id: x, name: x.split('/').pop(), contextWindow: num('ctx'), maxTokens: num('out'),
+    image: !!(info && CORE.hasVision(info.modalities)), reasoningEfforts: efforts }));
+  return Object.assign(common, {
+    mode: modeOf(id), id: getVal(id, 'providerId'), entryId: 'llm-pi-ai',
+    displayName: getVal(id, 'providerName') || getVal(id, 'providerId'),
+    apiKeyEnv: (($('#card-' + id + ' [data-envname]') || {}).value || '').trim() || null,
+    streamIdleTimeoutMs: num('idle'), defaultMaxTokens: num('dmt'),
+    thinking: getVal(id, 'thinking'), preserveThinking: getVal(id, 'preserve'),
+    models, setActive: getVal(id, 'setActive'), modelID: modelId, reasoningEffort: getVal(id, 'effortDef') || null });
+}
+const MODE_OK = ['add', 'replace', 'reset'];
+function savedMode(id){ const s = cardValues[id] && cardValues[id].__mode; return MODE_OK.includes(s) ? s : 'add'; }
+function modeOf(id){
+  const r = document.querySelector('#cards [data-card="' + id + '"].on input');
+  const v = r && r.value;
+  if (MODE_OK.includes(v)) { const st = cardValues[id] || (cardValues[id] = {}); st.__mode = v; storeCards(); return v; }
+  if (r) logMsg('Mode non reconnu (« ' + esc(String(v)) + ' ») — mode sûr « ajouter » appliqué.', 'w');
+  return savedMode(id);
+}
+
+/* ------------------------------------------------------------------ */
+/* 4. APERÇU / ÉCRITURE                                                */
+/* ------------------------------------------------------------------ */
+function previewTarget(id, quiet){
+  const h = state.targets.find(x => x.id === id); if (!h) return null;
+  const box = $('#preview');
+  try {
+    const o = cardOptions(h);
+    if (!o.providerId && !o.id && !o.name) throw new Error(t('errNoProv'));
+    const res = TARGETS.apply(h.flavor, h.file.text, o);
+    h.pending = res;
+    state.preview = { id, text: res.text, label: h.label + ' · ' + h.file.path };
+    box.textContent = res.text;
+    $('#previewTitle').innerHTML = '<b>' + esc(h.label) + '</b> <span class="mono dim">' + esc(h.file.path) + '</span> ' +
+      badge(t('ready'), 'b-ok') + (res.warnings.length ? badge(t('warnN', { n: res.warnings.length }), 'b-warn') : '');
+    res.warnings.forEach(w => logMsg(h.label + ' : ' + w, 'w'));
+    const btn = document.querySelector('#cards [data-write="' + id + '"]');
+    if (btn) btn.disabled = !h.file.handle;
+    $('#btnDownloadPreview').disabled = false;
+    $('#btnBackup').disabled = false;
+    if (!quiet) logMsg('preview ' + h.label + ' (' + res.text.length + ' bytes)', 'ok');
+    return res;
+  } catch (e){
+    box.innerHTML = '<span class="err">' + esc(e.message) + '</span>';
+    $('#previewTitle').innerHTML = '<span class="err">' + esc(h.label) + ' : ' + esc(t('errPreview')) + '</span>';
+    logMsg(h.label + ' : ' + esc(e.message), 'er');
+    return null;
+  }
+}
+async function writeTarget(id, quiet){
+  const t = state.targets.find(x => x.id === id); if (!t) return false;
+  const res = previewTarget(id, true);
+  if (!res) return false;
+  if (!t.file.handle){ logMsg(t.label + ' : pas de handle d’écriture → téléchargement.', 'w'); return downloadText(res.text, t.file.name); }
+  if (!quiet){
+    const extra = res.dropped && res.dropped.length ? '\n\nÉLÉMENTS SUPPRIMÉS : ' + res.dropped.join(', ') : '';
+    if (!confirm('Écrire dans ' + t.file.path + ' ?\nMode : ' + modeOf(id) + extra + '\n\nLe contenu précédent est téléchargeable en sauvegarde depuis l’étape 4.')) return false;
+  }
+  try {
+    await TARGETS.writeHandle(t.file.handle, res.text);
+    const after = await TARGETS.readHandle(t.file.handle);
+    t.file.text = after.text; t.file.size = after.size;
+    t.summary = TARGETS.summarize(t.flavor, after.text);
+    const want = getVal(id, 'providerId');
+    const okWrite = (t.summary.providers || []).some(p => p.key === want);
+    logMsg('écrit dans ' + esc(t.file.path) + ' — ' + (okWrite ? 'vérifié sur disque : fournisseur « ' + esc(want) + ' » présent'
+             : 'ATTENTION : relecture sans le fournisseur !'), okWrite ? 'ok' : 'er');
+    renderDetect(state.targets); renderCards();
+    return okWrite;
+  } catch (e){
+    logMsg('écriture refusée (' + esc(e.name) + ') sur ' + esc(t.file.path) + ' → téléchargement', 'er');
+    downloadText(res.text, t.file.name);
+    return false;
+  }
+}
+async function writeAll(){
+  const ids = state.targets.filter(t => t.found && document.querySelector('[data-include="' + t.id + '"]') && document.querySelector('[data-include="' + t.id + '"]').checked).map(t => t.id);
+  if (!ids.length){ logMsg('Aucune carte cochée.', 'w'); return; }
+  const modes = ids.map(id => { const t = state.targets.find(x => x.id === id); return t.label + ' → ' + modeOf(id); });
+  const risky = modes.filter(m => /replace|reset/.test(m));
+  if (!confirm('Écrire dans ' + ids.length + ' fichier(s) :\n  ' + modes.join('\n  ') +
+      (risky.length ? '\n\n⚠ MODE(S) DESTRUCTEUR(S) : ' + risky.join(', ') +
+        '\nLes fournisseurs ou clés listés seront SUPPRIMÉS. Une sauvegarde se télécharge à l’étape 4.' : ''))) return;
+  if (risky.length && !confirm('Confirmer la suppression des entrées existantes pour : ' + risky.map(r => r.split(' → ')[0]).join(', ') + ' ?')) return;
+  for (const id of ids) await writeTarget(id, true);
+}
+function previewAll(){
+  const list = state.targets.filter(t => t.found);
+  list.forEach(t => previewTarget(t.id, true));
+  const ok = list.filter(t => t.pending);
+  logMsg('aperçus générés : ' + ok.map(t => t.label).join(', '), ok.length ? 'ok' : 'er');
+  if (list.length) $('#preview').textContent = list.map(t =>
+    '/* ===== ' + t.label + ' · ' + t.file.path + ' ===== */\n' + (t.pending ? t.pending.text : '// aperçu impossible')).join('\n\n');
+  state.preview = { combined: true, text: $('#preview').textContent };
+  $('#previewTitle').innerHTML = badge(list.length + ' fichiers', 'b-acc') +
+    ' <span class="dim">vue combinée — utilise « Aperçu » d’une carte pour télécharger ou sauvegarder un fichier</span>';
+  $('#btnDownloadPreview').disabled = true; $('#btnBackup').disabled = true;
+}
+function downloadText(text, name){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }));
+  a.download = name || 'config.txt';
+  a.click();
+  logMsg('téléchargé : ' + esc(a.download) + ' — remplace le fichier d’origine avec.', 'i');
+}
+async function writeEnv(id){
+  const t = state.targets.find(x => x.id === id); if (!t || !t.env || !t.env.handle) return;
+  const name = (($('#card-' + id + ' [data-envname]') || {}).value || '').trim();
+  const val = (($('#card-' + id + ' [data-envval]') || {}).value || '').trim();
+  if (!name || !val){ logMsg('Variable ou valeur vide — .env non touché.', 'w'); return; }
+  try {
+    const next = TARGETS.envUpsert(t.env.text, name, val);
+    await TARGETS.writeHandle(t.env.handle, next);
+    const after = await TARGETS.readHandle(t.env.handle);
+    t.env.text = after.text;
+    const ok = TARGETS.envHas(after.text, name);
+    logMsg('écrit dans ' + esc(t.env.path) + ' — ' + (ok ? 'variable ' + esc(name) + ' vérifiée' : 'relecture douteuse'), ok ? 'ok' : 'er');
+    const f = $('#card-' + id + ' [data-envval]'); if (f) f.value = '';
+    renderCards();
+  } catch (e){ logMsg('écriture .env refusée : ' + esc(e.message), 'er'); }
+}
+function copyEnvLine(id){
+  const name = (($('#card-' + id + ' [data-envname]') || {}).value || '').trim();
+  const val = (($('#card-' + id + ' [data-envval]') || {}).value || '').trim();
+  if (!name) return;
+  navigator.clipboard.writeText(name + '=' + (val || '…')).then(() => logMsg('ligne copiée : ' + esc(name) + '=…', 'ok'),
+    () => logMsg('copie refusée par le navigateur', 'w'));
+}
+
+/* ------------------------------------------------------------------ */
+/* câblage                                                            */
+/* ------------------------------------------------------------------ */
+window.addEventListener('DOMContentLoaded', async () => {
+  loadStoredCards();
+  $('#fsBadge').textContent = FS ? 'accès disque : OUI' : 'accès disque : NON (téléchargement)';
+  $('#fsBadge').className = 'badge ' + (FS ? 'b-ok' : 'b-warn');
+  $('#btnDetect').addEventListener('click', pickRoot);
+  $('#btnRedetect').addEventListener('click', () => detectAndRender(state.root));
+  $('#btnTest').addEventListener('click', probe);
+  $('#btnProbeCtx').addEventListener('click', probeCtx);
+  $('#btnPreviewAll').addEventListener('click', previewAll);
+  $('#btnWriteAll').addEventListener('click', writeAll);
+  $('#btnDownloadPreview').addEventListener('click', () => {
+    if (!state.preview || state.preview.combined) return;
+    downloadText(state.preview.text, state.preview.id + '.txt'); });
+  $('#btnBackup').addEventListener('click', () => {
+    if (!state.preview || state.preview.combined) return;
+    const t = state.targets.find(x => x.id === state.preview.id);
+    downloadText(t.file.text, t.file.name + '.bak-' + new Date().toISOString().replace(/[:.]/g, '-'));
+  });
+  $('#btnCopyPreview').addEventListener('click', () => navigator.clipboard.writeText($('#preview').textContent)
+    .then(() => logMsg('aperçu copié', 'ok'), () => logMsg('copie refusée', 'w')));
+  ['endpoint', 'apikey'].forEach(k => { const el = $('#' + k);
+    el.addEventListener('input', () => { try { localStorage.setItem('harnais.' + k, el.value); } catch (e){} }); });
+  try {
+    const e = localStorage.getItem('harnais.endpoint'); if (e) $('#endpoint').value = e;
+    const k = localStorage.getItem('harnais.apikey'); if (k) $('#apikey').value = k;
+  } catch (err){}
+  logMsg('Étape 1&nbsp;: choisis ton dossier utilisateur pour détecter les harnais.', 'i');
+  const saved = await TARGETS.loadRoot();
+  if (saved){
+    state.root = saved;
+    $('#detectOut').innerHTML = '<div class="bar"><span>Autorisation mémorisée pour le dossier <b class="mono">' + esc(saved.name || '?') +
+      '</b></span><button class="primary mini" id="btnReuse">Réutiliser et scanner</button>' +
+      '<button class="mini ghost" id="btnChoose">Choisir un autre dossier</button></div>';
+    $('#btnReuse').addEventListener('click', reuseRoot);
+    $('#btnChoose').addEventListener('click', pickRoot);
+    if (saved.queryPermission){ try { if (await saved.queryPermission({ mode: 'readwrite' }) === 'granted') await reuseRoot(); } catch (e){} }
+  }
+  if (!FS) logMsg('Ce navigateur ne permet pas d’écrire sur le disque (File System Access). Ouvre ce fichier avec Chrome ou Edge.', 'w');
+});
+
+/* points d’entrée pour les tests automatiques */
+window.__app = { state, TARGETS, CORE, YCORE, detectAndRender, previewTarget, writeTarget, cardOptions, autoFillCards, renderCards, logMsg };
+</script>
+<script>
+/* =====================================================================
+   PONT LOCAL — serve.py
+   ---------------------------------------------------------------------
+   Deux choses sont impossibles depuis une page ouverte en file:// :
+     • l'accès disque (File System Access : autorisation par dossier,
+       handles non persistables, et « Choix du dossier refusé » affiché
+       même quand le dossier a bien été choisi) ;
+     • fetch() vers http://ip:port/v1 (CORS : Origin: null, aucune en-tête
+       Access-Control-Allow-Origin côté serveur, et OPTIONS -> 403).
+   Ce bloc branche l'interface sur le pont Python quand il est présent
+   (http://127.0.0.1:8766). Sinon il ne fait rien : la page retombe
+   exactement sur son comportement d'origine.
+   ===================================================================== */
+(function () {
+  'use strict';
+
+  const BR = { ok: false, home: '', port: 0, version: '' };
+
+  /* --- le handle persistant n'a plus de raison d'être ------------- */
+  const _loadRoot = TARGETS.loadRoot.bind(TARGETS);
+  TARGETS.loadRoot = async () => (BR.ok ? null : _loadRoot());
+
+  const jpost = async (path, body) => {
+    const r = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body || {}),
+      credentials: 'same-origin'
+    });
+    const txt = await r.text();
+    let j = null;
+    try { j = JSON.parse(txt); } catch (e) { /* réponse non JSON */ }
+    if (!r.ok || !j) throw new Error((j && j.error) || ('HTTP ' + r.status + ' — ' + txt.slice(0, 160)));
+    return j;
+  };
+
+  /* ------------------------------------------------------------------
+     1. réseau : tout passe par le pont (pas de CORS, erreurs réelles)
+     ------------------------------------------------------------------ */
+  const _req = req;
+  req = async function (url, opt) {
+    opt = opt || {};
+    if (!BR.ok) return _req(url, opt);
+    const headers = {};
+    const key = ($('#apikey').value || '').trim();
+    if (key) headers['Authorization'] = 'Bearer ' + key;
+    let j;
+    try {
+      j = await jpost('/api/http', {
+        url, method: opt.method || 'GET', headers, body: opt.body || null,
+        timeout: Math.round((opt.timeout || 15000) / 1000)
+      });
+    } catch (e) {
+      const err = new Error(e.message); err.name = 'BridgeError'; throw err;
+    }
+    if (j.error) {
+      const err = new Error(j.error); err.name = j.error_name || 'NetworkError'; throw err;
+    }
+    return { ok: j.status >= 200 && j.status < 400, status: j.status, ms: j.ms,
+             text: j.text, json: safeJson(j.text), headers: j.headers || {} };
+  };
+
+  const _classify = classify;
+  classify = async function (url) {
+    if (!BR.ok) return _classify(url);
+    let u;
+    try { u = new URL(url); } catch (e) { return { reachable: false, error: 'URL invalide' }; }
+    try {
+      const j = await jpost('/api/ping', {
+        host: u.hostname,
+        port: Number(u.port || (u.protocol === 'https:' ? 443 : 80)),
+        timeout: 6
+      });
+      return j.reachable ? { reachable: true, opaque: false, ms: j.ms }
+                         : { reachable: false, error: j.error || 'connexion refusée' };
+    } catch (e) { return { reachable: false, error: e.message }; }
+  };
+
+  /* ------------------------------------------------------------------
+     2. détection : scan côté serveur
+     ------------------------------------------------------------------ */
+  async function bridgeScan() {
+    if (!BR.ok) return;
+    $('#rootName').textContent = '· ' + BR.home;
+    $('#btnRedetect').disabled = false;
+    $('#detectOut').innerHTML = '<span class="spin"></span> <span class="dim">' + esc(BR.home) + '…</span>';
+    let res;
+    try {
+      state.paths = state.paths || loadPaths();
+      res = await jpost('/api/scan', { root: BR.home, deep: true, paths: state.paths });
+    }
+    catch (e) {
+      $('#detectOut').innerHTML = '<span class="err">' + t('errScan') + ' : ' + esc(e.message) + '</span>';
+      logMsg('scan failed: ' + e.message, 'er');
+      return;
+    }
+    state.root = res.root;
+    state.targets = res.items.map(it => ({
+      id: it.id, label: it.label, format: it.format, flavor: it.flavor, color: it.color,
+      note: it.note, envPrefix: it.envPrefix, envPath: it.envPath,
+      defaults: it.defaults, custom: !!it.custom, deep: !!it.deep,
+      found: !!it.exists,
+      file: it.exists ? { name: it.name, size: it.size, text: it.text, path: it.path,
+                          mtime: it.mtime, server: true,
+                          handle: { server: true, path: it.path } } : null,
+      env: (it.env && it.env.exists) ? { name: '.env', size: it.env.size, text: it.env.text,
+                          path: it.env.path, server: true,
+                          handle: { server: true, path: it.env.path } } : null,
+      summary: it.exists ? TARGETS.summarize(it.flavor, it.text) : null
+    }));
+    renderDetect(state.targets);
+    renderCards();
+    const found = state.targets.filter(t => t.found);
+    logMsg('bridge: ' + found.length + '/' + state.targets.length + ' harnesses under ' + res.root +
+           (found.length ? ' → ' + found.map(t => t.file.path).join(' · ') : ''), found.length ? 'ok' : 'w');
+    if (state.info) autoFillCards();
+    refreshVersions();
+  }
+
+  function loadPaths() {
+    try { return JSON.parse(localStorage.getItem('llmbridge.paths') || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  window.__bridgeScan = bridgeScan;
+
+  async function refreshVersions() {
+    try {
+      const r = await fetch('/api/versions', { credentials: 'same-origin' });
+      if (!r.ok) return;
+      state.versions = await r.json();
+      if (state.targets.length) renderCards();
+    } catch (e) { /* versions facultatives */ }
+  }
+
+  const _pickRoot = pickRoot;
+  pickRoot = async function () { return BR.ok ? bridgeScan() : _pickRoot(); };
+
+  /* ------------------------------------------------------------------
+     3. écriture : sauvegarde .bak + relecture de contrôle
+     ------------------------------------------------------------------ */
+  const _writeTarget = writeTarget;
+  writeTarget = async function (id, quiet) {
+    const t = state.targets.find(x => x.id === id);
+    if (!BR.ok || !t || !t.file || !t.file.server) return _writeTarget(id, quiet);
+
+    const res = previewTarget(id, true);
+    if (!res) return false;
+
+    if (!quiet) {
+      const extra = (res.dropped && res.dropped.length) ? '\n\nÉLÉMENTS SUPPRIMÉS : ' + res.dropped.join(', ') : '';
+      if (!confirm('Écrire dans ' + t.file.path + ' ?\nMode : ' + modeOf(id) + extra +
+                   '\n\nUne sauvegarde .bak-<horodatage> est créée à côté du fichier.')) return false;
+    }
+
+    let w;
+    try { w = await jpost('/api/write', { path: t.file.path, text: res.text }); }
+    catch (e) { logMsg(t.label + ' : écriture refusée — ' + esc(e.message), 'er'); return false; }
+
+    let rd = null;
+    try { rd = await jpost('/api/read', { path: t.file.path }); }
+    catch (e) { logMsg(t.label + ' : écrit mais relecture impossible (' + esc(e.message) + ')', 'w'); }
+
+    if (rd) {
+      t.file.text = rd.text; t.file.size = rd.size;
+      t.summary = TARGETS.summarize(t.flavor, rd.text);
+    }
+    const want = getVal(id, 'providerId');
+    const okWrite = !!(t.summary && (t.summary.providers || []).some(p => p.key === want));
+    logMsg('écrit dans ' + esc(t.file.path) + ' — ' + w.bytes + ' o, sauvegarde ' +
+      esc(w.backup ? w.backup.split(/[\\/]/).pop() : '—') + ' · ' +
+      (okWrite ? 'relecture disque : fournisseur « ' + esc(want) + ' » présent'
+               : 'ATTENTION : relecture sans le fournisseur !'), okWrite ? 'ok' : 'er');
+    renderDetect(state.targets);
+    renderCards();
+    return okWrite;
+  };
+
+  const _writeEnv = writeEnv;
+  writeEnv = async function (id) {
+    const t = state.targets.find(x => x.id === id);
+    if (!BR.ok || !t || !t.env || !t.env.server) return _writeEnv(id);
+
+    const name = (($('#card-' + id + ' [data-envname]') || {}).value || '').trim();
+    const val = (($('#card-' + id + ' [data-envval]') || {}).value || '').trim();
+    if (!name || !val) { logMsg('Variable ou valeur vide — .env non touché.', 'w'); return; }
+
+    try {
+      const next = TARGETS.envUpsert(t.env.text || '', name, val);
+      const w = await jpost('/api/write', { path: t.env.path, text: next });
+      const rd = await jpost('/api/read', { path: t.env.path });
+      t.env.text = rd.text;
+      logMsg('écrit dans ' + esc(t.env.path) + ' — variable ' + esc(name) + ' vérifiée (sauvegarde ' +
+        esc(w.backup ? w.backup.split(/[\\/]/).pop() : '—') + ')', 'ok');
+      const f = $('#card-' + id + ' [data-envval]');
+      if (f) f.value = '';
+      renderCards();
+    } catch (e) { logMsg('écriture .env refusée : ' + esc(e.message), 'er'); }
+  };
+
+  /* ------------------------------------------------------------------
+     4. démarrage : poignée de main puis scan automatique
+     ------------------------------------------------------------------ */
+  async function handshake() {
+    try {
+      const r = await fetch('/api/state', { credentials: 'same-origin' });
+      if (!r.ok) return false;
+      const st = await r.json();
+      if (!st || !st.ok) return false;
+      BR.ok = true; BR.home = st.home; BR.port = st.port; BR.version = st.version;
+      return true;
+    } catch (e) { return false; }
+  }
+
+  window.addEventListener('load', async () => {
+    if (!(await handshake())) {
+      $('#fsBadge').textContent = 'sans pont · mode file://';
+      $('#fsBadge').className = 'badge b-warn';
+      logMsg("Pont local absent. Lancez LLMBridge (double-clic sur l'exécutable) : en file://, " +
+             "l'accès disque et l'appel réseau restent bloqués par le navigateur.", 'w');
+      return;
+    }
+    $('#fsBadge').textContent = 'pont local · ' + BR.home;
+    $('#fsBadge').className = 'badge b-ok';
+    // les listeners d'origine capturent la fonction : on remplace les boutons
+    ['btnDetect', 'btnRedetect'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const c = el.cloneNode(true);
+      el.replaceWith(c);
+    });
+    document.getElementById('btnDetect').textContent = t('rescan') + ' · ' + BR.home;
+    document.getElementById('btnDetect').addEventListener('click', bridgeScan);
+    document.getElementById('btnRedetect').addEventListener('click', bridgeScan);
+    document.getElementById('btnRedetect').disabled = false;
+    await bridgeScan();
+  });
+
+  window.__bridge = BR;
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
+  "files.eol": "\r\n",
+  "files.encoding": "utf8",
+  "editor.rulers": [100],
+  "search.exclude": {
+    "**/build": true,
+    "**/dist": true,
+    "**/.venv": true
+  }
+}

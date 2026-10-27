@@ -1,0 +1,6 @@
+# Dépendances de compilation uniquement — l'outil n'en a aucune à l'exécution.
+# Installées par build.ps1 / build.sh.
+pyinstaller>=6.10        # testé avec 6.22.3
+
+# Facultatif : sert à régénérer assets/cacert.pem (racines TLS embarquées)
+# certifi==2026.10.23

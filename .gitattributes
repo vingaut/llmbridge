@@ -1,0 +1,10 @@
+* text=auto eol=lf
+
+*.ps1   text eol=crlf
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+*.exe   binary
+*.pem   text eol=lf
+
+# l'interface est un fichier unique : pas de fusion ligne à ligne hasardeuse
+web/index.html merge=union
