@@ -2,23 +2,15 @@
 
 **Brancher un endpoint local compatible OpenAI sur opencode, Hermes Agent et dsh — en un clic, sans éditer un fichier à la main.**
 
-LLMBridge est un outil de bureau en un seul fichier. Il sonde une API
-compatible OpenAI sur votre réseau (`http://ip:port/v1`), en déduit la fenêtre de
-contexte, les modalités et le modèle exposé, puis écrit un fournisseur prêt à
-l'emploi dans les fichiers de configuration des harnais installés sur la machine —
-avec une sauvegarde horodatée avant chaque écriture.
+LLMBridge est un outil qui automatise à 90% la configuration des providers locaux dans les harnais:
+-HERMES
+-DeepSeek Harness
+-OPENCODE V2
+Je massacre regulierement mes workflows et j'en avais marre de tout retaper dans ces satanés cli !
 
-Il existe parce qu'une simple page HTML **ne peut pas** faire ce travail : en
-`file://`, le navigateur bloque deux choses.
+Je voulais un outil sans dependance qu'on peut lancer sur n'importe quel poste dans un reseau local et qui fera la mise a jour des providers locaux dans les harnais les plus utilisés.
 
-| Blocage | Ce qui se passe |
-|---|---|
-| **CORS** | `fetch()` envoie `Origin: null` ; le serveur répond `200` mais sans `Access-Control-Allow-Origin`, donc le navigateur jette la réponse. Beaucoup de serveurs refusent aussi le preflight `OPTIONS` (`403`). |
-| **Accès disque** | File System Access exige une origine stable et une autorisation par dossier ; en `file://` l'origine est opaque, les handles ne sont pas persistables, et l'échec s'affiche comme « dossier refusé ». |
-
-LLMBridge fait les deux côté serveur, sur `127.0.0.1` uniquement, et sert
-l'interface depuis là.
-
+Ca ne sert probablement à rien, mais c'est cousu main ! Enfin ... hebergé et motorisé localement, pas un jeton ne vient de Chine ni des US !
 ---
 
 ## Démarrage — trois façons
