@@ -3,6 +3,15 @@
 Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) · versionnage
 [SemVer](https://semver.org/lang/fr/).
 
+## [3.2.1] — 2026-10-28
+
+### Modifié
+- variables d'environnement alignées sur celles réellement lues par les harnais :
+  `HERMES_CONFIG_PATH` et `HERMES_ENV_PATH` (hermes_cli/config.py) remplacent la
+  supposition `HERMES_CONFIG` ; `DSH_HOME` confirmé par la source de dsh
+  (« the home-level user patch layer `$DSH_HOME/cordis.patch.yml` »).
+- le `.env` peut être désigné directement par `HERMES_ENV_PATH`, avant toute déduction.
+
 ## [3.2.0] — 2026-10-28
 
 ### Ajouté

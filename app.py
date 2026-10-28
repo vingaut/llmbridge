@@ -53,7 +53,7 @@ from urllib import request as urlreq
 from urllib.parse import parse_qs, urlsplit
 
 APP = "llm-bridge"
-VERSION = "3.2.0"
+VERSION = "3.2.1"
 DEFAULT_PORT = 8766
 MAX_HTTP_BODY = 8 * 1024 * 1024      # réponse max d'une requête proxifiée
 MAX_REQ_BODY = 16 * 1024 * 1024      # corps max accepté par l'API
@@ -154,10 +154,17 @@ ENV_HINTS = {
                  ("XDG_CONFIG_HOME", "xdg")],
     "opencode-desktop": [("OPENCODE_CONFIG", "file"), ("OPENCODE_CONFIG_DIR", "dir"),
                          ("XDG_CONFIG_HOME", "xdg")],
-    "hermes": [("HERMES_CONFIG", "file"), ("HERMES_HOME", "dir"), ("HERMES_CONFIG_DIR", "dir")],
+    # HERMES_CONFIG_PATH / HERMES_ENV_PATH : lus par hermes_cli/config.py
+    # HERMES_HOME : re-homes le profil (Desktop, profils nommés)
+    "hermes": [("HERMES_CONFIG_PATH", "file"), ("HERMES_CONFIG", "file"),
+               ("HERMES_HOME", "dir"), ("HERMES_CONFIG_DIR", "dir")],
+    # source de dsh : « the home-level user patch layer ($DSH_HOME/cordis.patch.yml) »
     "dsh": [("DSH_CONFIG", "file"), ("DSH_PATCH", "file"), ("DSH_HOME", "dir"),
             ("DSH_AGENTS_HOME", "dir"), ("XDG_CONFIG_HOME", "xdg")],
 }
+
+# Variable qui désigne le fichier de clés (.env) d'un harnais.
+ENV_ENV = {"hermes": "HERMES_ENV_PATH"}
 
 MAX_DEPTH = 9            # profondeur max sous la racine scannée
 MAX_ENTRIES = 400_000    # nombre d'entrées max vues au total
@@ -390,8 +397,11 @@ def harness_item(h: dict, root: str, tree: dict | None = None, overrides: dict |
 
     if h["env"]:
         custom_env = expand_path(ov.get("env", "")) if ov.get("env") else ""
+        env_var = ENV_ENV.get(h["id"])
         if custom_env:
             env_path = custom_env
+        elif env_var and os.environ.get(env_var):
+            env_path = expand_path(os.environ[env_var])
         elif item.get("announced_env"):
             env_path = item["announced_env"]
         elif item["exists"] and item["path"]:

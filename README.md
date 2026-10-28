@@ -90,7 +90,8 @@ Those are only the *first* guess. The scan tries, in this order, and every file 
 is offered in a dropdown on the card:
 
 1. **environment variables** — `OPENCODE_CONFIG`, `OPENCODE_CONFIG_DIR`, `XDG_CONFIG_HOME`,
-   `HERMES_HOME`, `HERMES_CONFIG`, `DSH_HOME`, `DSH_AGENTS_HOME`, `DSH_CONFIG`, `DSH_PATCH`;
+   `HERMES_HOME`, `HERMES_CONFIG_PATH`, `HERMES_ENV_PATH`, `DSH_HOME`,
+   `DSH_AGENTS_HOME`, `DSH_CONFIG`, `DSH_PATCH`;
 2. **what the tool announces itself** — `hermes config path`, `hermes config env-path`,
    `opencode debug paths`;
 3. **the usual conventions** (table above);
