@@ -3,6 +3,16 @@
 Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) · versionnage
 [SemVer](https://semver.org/lang/fr/).
 
+## [3.1.0] — 2026-10-28
+
+### Ajouté
+- **opencode desktop** est détecté comme un harnais à part entière, à côté de la CLI
+  terminale : deux cartes, deux binaires, deux versions (`opencode2 v0.0.0-beta-…`
+  et `opencode-cli.exe v2.1.4`), sans remplacer l'une par l'autre.
+- Le dossier de configuration est demandé au binaire (`<cli> debug paths`) au lieu
+  d'être supposé : une installation desktop hors `~/.config` est suivie correctement.
+- Le badge de version affiche le binaire détecté en infobulle.
+
 ## [3.0.0] — 2026-10-27
 
 Version publiable.

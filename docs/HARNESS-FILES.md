@@ -5,6 +5,11 @@ préserve. Tous les exemples viennent de fichiers réels produits et relus.
 
 ## opencode — `~/.config/opencode/opencode.jsonc`
 
+La **CLI terminale** et l'**application desktop** partagent ce même fichier : les
+deux sont détectées séparément (binaire et version distincts) mais écrivent au même
+endroit. Le dossier de configuration est demandé au binaire lui-même
+(`opencode debug paths`), ce qui suit l'installation réelle au lieu de la supposer.
+
 Écrit dans `providers` (pluriel). Les commentaires `//` et les autres fournisseurs
 sont conservés en mode `add`.
 

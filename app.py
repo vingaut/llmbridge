@@ -52,7 +52,7 @@ from urllib import request as urlreq
 from urllib.parse import urlsplit
 
 APP = "llm-bridge"
-VERSION = "3.0.0"
+VERSION = "3.1.0"
 DEFAULT_PORT = 8766
 MAX_HTTP_BODY = 8 * 1024 * 1024      # réponse max d'une requête proxifiée
 MAX_REQ_BODY = 16 * 1024 * 1024      # corps max accepté par l'API
@@ -60,23 +60,37 @@ VERSION_CACHE_TTL = 60.0
 
 # Versions contre lesquelles cette release a été testée (docs/VERIFIED-VERSIONS.md).
 VERIFIED = {
-    "opencode": "2.1.4",
+    "opencode": "0.0.0-beta-19271",        # CLI terminale (npm @opencode-ai/cli)
+    "opencode-desktop": "2.1.4",           # application desktop (Electron)
     "hermes": "0.22.5",
     "dsh": "0.2.1-rc.2",
 }
 
 HARNESS = [
     {
-        "id": "opencode", "label": "opencode", "format": "jsonc", "flavor": "opencode",
-        "color": "#f7c948", "note": "providers (pluriel) + package openai-compatible",
+        "id": "opencode", "label": "opencode (terminal)", "format": "jsonc", "flavor": "opencode",
+        "color": "#f7c948", "note": "CLI en terminal, partage ~/.config/opencode",
         "config": [".config/opencode/opencode.jsonc", ".config/opencode/opencode.json"],
-        "env": None, "envPrefix": None,
-        "bins": ["opencode"],
+        "env": None, "envPrefix": None, "discover": True,
+        "bins": ["opencode", "opencode2"],
         "probe_paths": [
-            r"%LOCALAPPDATA%\Programs\@opencodedesktop\resources\opencode-cli.exe",
             r"%APPDATA%\npm\opencode.cmd",
             r"%APPDATA%\npm\opencode2.cmd",
             "/usr/local/bin/opencode", "/usr/bin/opencode",
+        ],
+    },
+    {
+        "id": "opencode-desktop", "label": "opencode (desktop)", "format": "jsonc",
+        "flavor": "opencode", "color": "#f0b429",
+        "note": "application desktop (Electron), même config que la CLI",
+        "config": [".config/opencode/opencode.jsonc", ".config/opencode/opencode.json"],
+        "env": None, "envPrefix": None, "discover": True,
+        "bins": [],
+        "probe_paths": [
+            r"%LOCALAPPDATA%\Programs\@opencodedesktop\resources\opencode-cli.exe",
+            r"%LOCALAPPDATA%\Programs\opencode\resources\opencode-cli.exe",
+            r"%PROGRAMFILES%\opencode\resources\opencode-cli.exe",
+            "/opt/opencode/resources/opencode-cli",
         ],
     },
     {
@@ -196,13 +210,26 @@ def harness_item(h: dict, root: str, deep: bool, overrides: dict | None = None) 
 
     custom_cfg = expand_path(ov.get("config", "")) if ov.get("config") else ""
     cfg = None
+    exe, exe_source = find_exe(h) if h.get("bins") or h.get("probe_paths") else (None, None)
+    item["binary"] = exe
+    item["binary_source"] = exe_source
     if custom_cfg:
         item["custom"] = True
         item["path"] = custom_cfg
         if os.path.isfile(custom_cfg):
             cfg = custom_cfg
     else:
-        cfg, was_deep = find_config(root, h["config"], deep)
+        candidates = list(h["config"])
+        # certains harnais (opencode desktop) savent où ils lisent leur config :
+        # on le leur demande au lieu de parier sur ~/.config
+        if h.get("discover") and exe:
+            cdir = cli_config_dir(exe)
+            if cdir:
+                first = os.path.basename(h["config"][0])
+                alt = os.path.splitext(first)[0] + ".json"
+                candidates = [os.path.join(cdir, first), os.path.join(cdir, alt)] + candidates
+                item["defaults"]["config"] = candidates[0]
+        cfg, was_deep = find_config(root, candidates, deep)
         item["deep"] = was_deep
         if cfg:
             item["path"] = cfg
@@ -280,42 +307,75 @@ def do_write(path: str, text: str) -> dict:
 # --------------------------------------------------------------------------
 # versions installées
 # --------------------------------------------------------------------------
-def _run_version(exe: str) -> str | None:
-    args = ["--version"]
+def _run(exe: str, args: list[str], timeout: float = 4.0) -> str | None:
+    """Exécute un binaire et rend toute sa sortie (jamais un GUI : timeout court)."""
     if sys.platform == "win32" and exe.lower().endswith((".cmd", ".bat")):
         cmd = ["cmd", "/c", exe, *args]
     else:
         cmd = [exe, *args]
     try:
-        p = subprocess.run(cmd, capture_output=True, text=True, timeout=4,
+        p = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout,
                            encoding="utf-8", errors="replace",
                            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
-        out = ((p.stdout or "") + "\n" + (p.stderr or "")).strip()
+        return ((p.stdout or "") + "\n" + (p.stderr or "")).strip()
+    except Exception:  # noqa: BLE001 — binaire absent, GUI, timeout…
+        return None
+
+
+def _run_version(exe: str) -> str | None:
+    out = _run(exe, ["--version"])
+    if out:
         for line in out.splitlines():
             line = line.strip()
             if line:
                 return line[:120]
-    except Exception:  # noqa: BLE001 — binaire absent, GUI, timeout…
-        return None
     return None
 
 
-def detect_version(h: dict) -> dict:
+def find_exe(h: dict) -> tuple[str | None, str | None]:
+    """Cherche le binaire d'un harnais : PATH d'abord, puis emplacements connus."""
     for name in h.get("bins", []):
         exe = shutil.which(name)
         if exe:
-            out = _run_version(exe)
-            if out:
-                return {"raw": out, "exe": exe, "source": "PATH",
-                        "verified": VERIFIED.get(h["id"], "")}
+            return exe, "PATH"
     for candidate in h.get("probe_paths", []):
         exe = expand_path(candidate)
         if exe and os.path.isfile(exe):
-            out = _run_version(exe)
-            if out:
-                return {"raw": out, "exe": exe, "source": "install",
-                        "verified": VERIFIED.get(h["id"], "")}
-    return {"raw": None, "exe": None, "source": None, "verified": VERIFIED.get(h["id"], "")}
+            return exe, "install"
+    return None, None
+
+
+_PATHS_CACHE: dict = {}
+
+
+def cli_config_dir(exe: str) -> str | None:
+    """Demande au binaire où il lit sa configuration (`<cli> debug paths`).
+
+    C'est ce qui permet de suivre l'application desktop d'opencode même si elle
+    n'installe rien dans le PATH et n'écrit pas là où on l'attend.
+    """
+    if exe in _PATHS_CACHE:
+        return _PATHS_CACHE[exe]
+    found = None
+    out = _run(exe, ["debug", "paths"], timeout=6)
+    if out:
+        for line in out.splitlines():
+            parts = line.split(None, 1)
+            if len(parts) == 2 and parts[0].strip().lower() == "config":
+                found = parts[1].strip().strip('"')
+                break
+    _PATHS_CACHE[exe] = found
+    return found
+
+
+def detect_version(h: dict) -> dict:
+    exe, source = find_exe(h)
+    if exe:
+        raw = _run_version(exe)
+        if raw:
+            return {"raw": raw, "exe": exe, "source": source,
+                    "verified": VERIFIED.get(h["id"], "")}
+    return {"raw": None, "exe": exe, "source": source, "verified": VERIFIED.get(h["id"], "")}
 
 
 def versions(force: bool = False) -> dict:
@@ -577,7 +637,7 @@ def list_harnesses(root: str) -> int:
     print("\nversions :")
     for hid, info in versions().get("detected", {}).items():
         state = "vérifiée" if info.get("match") else ("non vérifiée" if info.get("raw") else "inconnue")
-        print(f"  {hid:<10} {(info.get('raw') or '—'):<46} {state}")
+        print(f"  {hid:<18} {(info.get('raw') or '—'):<46} {state}")
     return 0
 
 

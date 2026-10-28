@@ -2639,7 +2639,8 @@ function versionBadge(id){
   const v = state.versions && state.versions.detected && state.versions.detected[id];
   if (!v || !v.raw) return badge(t('verUnknown'), 'b-mut');
   const short = String(v.raw).replace(/^[A-Za-z0-9_.-]+\s+/, '').slice(0, 30);
-  const tip = (v.match ? t('verVerified') : t('verMismatch')) + ' — ' + v.raw;
+  const tip = (v.match ? t('verVerified') : t('verMismatch')) + ' — ' + v.raw +
+              (v.exe ? ' · ' + String(v.exe).split(/[\\/]/).pop() : '');
   return '<span class="badge ' + (v.match ? 'b-ok' : 'b-warn') + '" title="' + escA(tip) + '">' +
          esc(short) + '</span>';
 }

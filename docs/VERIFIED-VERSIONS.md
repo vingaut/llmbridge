@@ -6,7 +6,8 @@ installées sur la machine de l'auteur. Les versions sont détectées à l'exéc
 
 | Harnais | Version testée | Détection | État |
 |---|---|---|---|
-| opencode | `2.1.4` | `opencode` / `opencode-cli.exe` (`%LOCALAPPDATA%\Programs\@opencodedesktop\resources\`) / `opencode2` | ✅ vérifiée |
+| opencode (terminal) | `0.0.0-beta-19271` | `opencode` / `opencode2` dans le PATH, sinon `%APPDATA%\npm\opencode2.cmd` | ✅ vérifiée |
+| opencode (desktop) | `2.1.4` | `%LOCALAPPDATA%\Programs\@opencodedesktop\resources\opencode-cli.exe`, sinon `%LOCALAPPDATA%\Programs\opencode\…`, `%PROGRAMFILES%\opencode\…`, `/opt/opencode/resources/opencode-cli` | ✅ vérifiée |
 | Hermes Agent | `0.22.5` (2026.9.24) | `hermes` dans le PATH, sinon `%USERPROFILE%\.hermes\hermes-agent\.hermes\bin\hermes.cmd` | ✅ vérifiée |
 | dsh (`@deepseek-ai/dsh`) | `0.2.1-rc.2` | `dsh` dans le PATH, sinon `%APPDATA%\npm\dsh.cmd` | ✅ vérifiée |
 

@@ -5,7 +5,7 @@
 LLMBridge est un outil qui automatise à 90% la configuration des providers locaux dans les harnais:
 -HERMES
 -DeepSeek Harness
--OPENCODE V2
+-OPENCODE V2 (CLI terminale et application desktop)
 Je massacre regulierement mes workflows et j'en avais marre de tout retaper dans ces satanés cli !
 
 Je voulais un outil sans dependance qu'on peut lancer sur n'importe quel poste dans un reseau local et qui fera la mise a jour des providers locaux dans les harnais les plus utilisés.
@@ -63,7 +63,8 @@ Cette version a été testée contre :
 
 | Harnais | Version testée | Ce qui est écrit |
 |---|---|---|
-| **opencode** | `2.1.4` | `providers.<id>` → `name`, `package`, `settings.baseURL/apiKey/headerTimeout/chunkTimeout`, `models.<alias>` → `modelID`, `name`, `capabilities`, `compatibility.reasoningField`, `limit.context/output` |
+| **opencode** (CLI terminale) | `0.0.0-beta-19271` | `providers.<id>` → `name`, `package`, `settings.baseURL/apiKey/headerTimeout/chunkTimeout`, `models.<alias>` → `modelID`, `name`, `capabilities`, `compatibility.reasoningField`, `limit.context/output` |
+| **opencode** (application desktop) | `2.1.4` | même fichier, même schéma — les deux builds partagent `~/.config/opencode/opencode.jsonc` |
 | **Hermes Agent** | `0.22.5` (config `v51`) | entrée `custom_providers[]` (`name`, `base_url`, `key_env`, `model`, `models`, `models_discovered`) et, si demandé, le bloc `model:` |
 | **dsh** (DeepSeek Harness) | `0.2.1-rc.2` | fournisseur sous `llm-pi-ai → config.providers`, plus `agent-default-model` |
 

@@ -7,7 +7,7 @@
 LLMBridge is a tool that automates 90% of the configuration process for local providers within the following harnesses:
 - HERMES
 - DeepSeek Harness
-- OPENCODE V2
+- OPENCODE V2 (terminal CLI and desktop app)
 I’m constantly breaking my own workflows, and I got tired of having to re-enter everything into those wretched CLIs!
 
 I wanted a dependency-free tool that could be run on any machine on a local network to update the local providers used in the most common harnesses.
@@ -66,7 +66,8 @@ This release was tested against:
 
 | Harness | Version tested | What is written |
 |---|---|---|
-| **opencode** | `2.1.4` | `providers.<id>` → `name`, `package`, `settings.baseURL/apiKey/headerTimeout/chunkTimeout`, `models.<alias>` → `modelID`, `name`, `capabilities`, `compatibility.reasoningField`, `limit.context/output` |
+| **opencode** (terminal CLI) | `0.0.0-beta-19271` | `providers.<id>` → `name`, `package`, `settings.baseURL/apiKey/headerTimeout/chunkTimeout`, `models.<alias>` → `modelID`, `name`, `capabilities`, `compatibility.reasoningField`, `limit.context/output` |
+| **opencode** (desktop app) | `2.1.4` | same file, same schema — both builds share `~/.config/opencode/opencode.jsonc` |
 | **Hermes Agent** | `0.22.5` (config `v51`) | `custom_providers[]` entry (`name`, `base_url`, `key_env`, `model`, `models`, `models_discovered`) and, if asked, the `model:` block (`default`, `provider`, `base_url`, `api_key`, `context_length`) |
 | **dsh** (DeepSeek Harness) | `0.2.1-rc.2` | provider under `llm-pi-ai → config.providers`, plus `agent-default-model` (`provider`, `model`, `reasoningEffort`) |
 
