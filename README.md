@@ -82,13 +82,29 @@ Default locations, under your home directory:
 
 | Harness | Config | Key file |
 |---|---|---|
-| opencode | `~/.config/opencode/opencode.jsonc` | — (key inline in the JSON) |
+| opencode (terminal + desktop) | `~/.config/opencode/opencode.jsonc` | — (key inline in the JSON) |
 | Hermes Agent | `~/.hermes/config.yaml` | `~/.hermes/.env` |
 | dsh | `~/.dsh/cordis.patch.yml` | `~/.dsh/.env` |
 
-Installed elsewhere, or a second profile? Open **⚙ Paths** above the cards and give
-the exact files — `~`, `$VARS` and `%VARS%` are expanded, the neighbouring `.env` is
-inferred, and the choice is remembered in your browser. Nothing else changes.
+Those are only the *first* guess. The scan tries, in this order, and every file it finds
+is offered in a dropdown on the card:
+
+1. **environment variables** — `OPENCODE_CONFIG`, `OPENCODE_CONFIG_DIR`, `XDG_CONFIG_HOME`,
+   `HERMES_HOME`, `HERMES_CONFIG`, `DSH_HOME`, `DSH_AGENTS_HOME`, `DSH_CONFIG`, `DSH_PATCH`;
+2. **what the tool announces itself** — `hermes config path`, `hermes config env-path`,
+   `opencode debug paths`;
+3. **the usual conventions** (table above);
+4. **a walk of the whole profile**, hidden folders and `AppData` included: any
+   `opencode.json(c)` inside a folder named `opencode`, `config.yaml` inside
+   `.hermes` / `Hermes`, `cordis.patch.yml` inside `dsh`. Bounded by depth, entry count
+   and a time budget; `node_modules`, browser caches and `Windows` are skipped.
+
+dsh and the opencode CLI are npm-only: their version is read from the package manifest
+(`@deepseek-ai/dsh`, `@opencode-ai/cli`) rather than by executing a `.cmd` shim.
+
+Installed somewhere unusual? **Folder to scan** in step 1 rescans any root (`C:\Users`,
+another profile, a moved install) and 📁 on a card opens a folder browser to point that
+harness at the right directory — the choice is remembered in your browser.
 
 ## Safety
 

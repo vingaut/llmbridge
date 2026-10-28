@@ -3,6 +3,28 @@
 Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) · versionnage
 [SemVer](https://semver.org/lang/fr/).
 
+## [3.2.0] — 2026-10-28
+
+### Ajouté
+- **Parcours du profil complet** pour trouver les configurations là où elles sont
+  réellement installées : dossiers masqués et `AppData` compris (ils étaient exclus),
+  correspondance sur (dossier parent, nom de fichier), bornes de profondeur et de durée.
+  C'est ce qui ratait sur une seconde machine Windows.
+- **Variables d'environnement** prises en compte : `OPENCODE_CONFIG`,
+  `OPENCODE_CONFIG_DIR`, `XDG_CONFIG_HOME`, `HERMES_HOME`, `HERMES_CONFIG`,
+  `DSH_HOME`, `DSH_AGENTS_HOME`, `DSH_CONFIG`, `DSH_PATCH`.
+- **Chemins annoncés par les outils** : `hermes config path`, `hermes config env-path`,
+  `opencode debug paths`.
+- **Versions npm** lues dans le manifeste (`@deepseek-ai/dsh`, `@opencode-ai/cli`) :
+  plus de shim `.cmd` à exécuter, ce qui convient à dsh qui s'installe par npm uniquement.
+- **Choix du dossier dans l'interface** : champ « Dossier à scanner » (n'importe quelle
+  racine, `C:/Users` ou un autre profil), navigateur de dossiers, bouton dossier par
+  harnais, liste des candidats avec leur origine (`$VAR`, `cli`, `debug paths`, `scan`).
+
+### Corrigé
+- un chemin annoncé par un binaire ou une variable d'environnement ne déborde plus hors
+  de la racine scannée : scanner un autre profil ne renvoie plus le vôtre.
+
 ## [3.1.0] — 2026-10-28
 
 ### Ajouté

@@ -1299,6 +1299,15 @@ const I18N = {
     s1: 'Détection des harnais',
     s1hint: 'Interface servie par <span class="mono">LLMBridge</span> (pont local sur <span class="mono">127.0.0.1</span>) : c’est lui qui lit et écrit les fichiers et qui interroge l’API — le navigateur ne peut ni l’un ni l’autre depuis une page <span class="mono">file://</span>. Les chemins par défaut de chaque harnais sont utilisés ; tu peux les remplacer dans « Chemins ».',
     scan: 'Scanner mes fichiers de configuration',
+    scanRoot: 'Dossier à scanner',
+    scanDo: 'Scanner ce dossier',
+    scanBrowse: 'Choisir un dossier…',
+    pickFor: 'Chercher pour',
+    useThisDir: 'Utiliser ce dossier',
+    upDir: 'Parent',
+    cancel: 'Annuler',
+    noMatch: 'Aucun fichier de configuration trouvé ici.',
+    pickOne: 'Plusieurs fichiers trouvés — choisis celui à modifier :',
     rescan: 'Rescanner',
     deep: 'Chercher aussi plus profond (si les fichiers sont hors des chemins par défaut)',
     thHarness: 'Harnais',
@@ -1396,6 +1405,15 @@ const I18N = {
     s1: 'Harness detection',
     s1hint: 'Interface served by <span class="mono">LLMBridge</span> (local bridge on <span class="mono">127.0.0.1</span>): the bridge reads and writes the files and queries the API — the browser can do neither from a <span class="mono">file://</span> page. Default paths are used for each harness; you can override them under “Paths”.',
     scan: 'Scan my configuration files',
+    scanRoot: 'Folder to scan',
+    scanDo: 'Scan this folder',
+    scanBrowse: 'Pick a folder…',
+    pickFor: 'Look for',
+    useThisDir: 'Use this folder',
+    upDir: 'Up',
+    cancel: 'Cancel',
+    noMatch: 'No configuration file found here.',
+    pickOne: 'Several files found — pick the one to edit:',
     rescan: 'Rescan',
     deep: 'Also search deeper (if the files are outside the default paths)',
     thHarness: 'Harness',
@@ -1497,6 +1515,15 @@ Object.assign(I18N, {
     s1: 'Harness-Erkennung',
     s1hint: 'Oberfläche ausgeliefert von <span class="mono">LLMBridge</span> (lokale Brücke auf <span class="mono">127.0.0.1</span>): Die Brücke liest und schreibt die Dateien und fragt die API ab — der Browser kann beides von einer <span class="mono">file://</span>-Seite aus nicht. Es gelten die Standardpfade; unter „Pfade“ änderbar.',
     scan: 'Konfigurationsdateien suchen',
+    scanRoot: 'Zu scannender Ordner',
+    scanDo: 'Diesen Ordner scannen',
+    scanBrowse: 'Ordner wählen…',
+    pickFor: 'Suchen für',
+    useThisDir: 'Diesen Ordner verwenden',
+    upDir: 'Übergeordnet',
+    cancel: 'Abbrechen',
+    noMatch: 'Hier wurde keine Konfigurationsdatei gefunden.',
+    pickOne: 'Mehrere Dateien gefunden — wähle die zu bearbeitende:',
     rescan: 'Erneut suchen',
     deep: 'Auch tiefer suchen (wenn die Dateien nicht an den Standardpfaden liegen)',
     thHarness: 'Harness',
@@ -1589,6 +1616,15 @@ Object.assign(I18N, {
     s1: 'Detección de arneses',
     s1hint: 'Interfaz servida por <span class="mono">LLMBridge</span> (puente local en <span class="mono">127.0.0.1</span>): el puente lee y escribe los archivos y consulta la API — el navegador no puede hacer ninguna de las dos cosas desde una página <span class="mono">file://</span>. Se usan las rutas por defecto; puedes cambiarlas en «Rutas».',
     scan: 'Escanear mis archivos de configuración',
+    scanRoot: 'Carpeta a escanear',
+    scanDo: 'Escanear esta carpeta',
+    scanBrowse: 'Elegir una carpeta…',
+    pickFor: 'Buscar para',
+    useThisDir: 'Usar esta carpeta',
+    upDir: 'Subir',
+    cancel: 'Cancelar',
+    noMatch: 'No se encontró ningún archivo de configuración aquí.',
+    pickOne: 'Se encontraron varios archivos — elige el que quieres modificar:',
     rescan: 'Volver a escanear',
     deep: 'Buscar también más profundo (si los archivos están fuera de las rutas por defecto)',
     thHarness: 'Arnés',
@@ -1681,6 +1717,15 @@ Object.assign(I18N, {
     s1: 'Rilevamento degli harness',
     s1hint: 'Interfaccia servita da <span class="mono">LLMBridge</span> (ponte locale su <span class="mono">127.0.0.1</span>): è il ponte che legge e scrive i file e interroga l’API — il browser non può fare né l’uno né l’altro da una pagina <span class="mono">file://</span>. Vengono usati i percorsi predefiniti; puoi cambiarli in «Percorsi».',
     scan: 'Scansiona i miei file di configurazione',
+    scanRoot: 'Cartella da scansionare',
+    scanDo: 'Scansiona questa cartella',
+    scanBrowse: 'Scegli una cartella…',
+    pickFor: 'Cerca per',
+    useThisDir: 'Usa questa cartella',
+    upDir: 'Cartella superiore',
+    cancel: 'Annulla',
+    noMatch: 'Nessun file di configurazione trovato qui.',
+    pickOne: 'Trovati più file — scegli quello da modificare:',
     rescan: 'Riscansiona',
     deep: 'Cerca anche più in profondità (se i file sono fuori dai percorsi predefiniti)',
     thHarness: 'Harness',
@@ -1773,6 +1818,15 @@ Object.assign(I18N, {
     s1: 'Deteção dos harnesses',
     s1hint: 'Interface servida por <span class="mono">LLMBridge</span> (ponte local em <span class="mono">127.0.0.1</span>): é a ponte que lê e escreve os ficheiros e interroga a API — o navegador não consegue fazer nenhum dos dois a partir de uma página <span class="mono">file://</span>. Usa os caminhos predefinidos; pode alterá-los em «Caminhos».',
     scan: 'Analisar os meus ficheiros de configuração',
+    scanRoot: 'Pasta a analisar',
+    scanDo: 'Analisar esta pasta',
+    scanBrowse: 'Escolher uma pasta…',
+    pickFor: 'Procurar para',
+    useThisDir: 'Usar esta pasta',
+    upDir: 'Subir',
+    cancel: 'Cancelar',
+    noMatch: 'Nenhum ficheiro de configuração encontrado aqui.',
+    pickOne: 'Vários ficheiros encontrados — escolhe o que queres editar:',
     rescan: 'Analisar novamente',
     deep: 'Procurar também mais fundo (se os ficheiros estiverem fora dos caminhos predefinidos)',
     thHarness: 'Harness',
@@ -1865,6 +1919,15 @@ Object.assign(I18N, {
     s1: 'Harness-detectie',
     s1hint: 'Interface geleverd door <span class="mono">LLMBridge</span> (lokale brug op <span class="mono">127.0.0.1</span>): de brug leest en schrijft de bestanden en bevraagt de API — de browser kan geen van beide vanuit een <span class="mono">file://</span>-pagina. Standaardpaden worden gebruikt; aanpasbaar onder “Paden”.',
     scan: 'Mijn configuratiebestanden scannen',
+    scanRoot: 'Te scannen map',
+    scanDo: 'Deze map scannen',
+    scanBrowse: 'Map kiezen…',
+    pickFor: 'Zoeken voor',
+    useThisDir: 'Deze map gebruiken',
+    upDir: 'Omhoog',
+    cancel: 'Annuleren',
+    noMatch: 'Geen configuratiebestand gevonden.',
+    pickOne: 'Meerdere bestanden gevonden — kies het bestand om te bewerken:',
     rescan: 'Opnieuw scannen',
     deep: 'Ook dieper zoeken (als de bestanden buiten de standaardpaden staan)',
     thHarness: 'Harness',
@@ -1957,6 +2020,15 @@ Object.assign(I18N, {
     s1: 'Wykrywanie harnessów',
     s1hint: 'Interfejs serwowany przez <span class="mono">LLMBridge</span> (lokalny pomost na <span class="mono">127.0.0.1</span>): to pomost czyta i zapisuje pliki oraz odpytuje API — przeglądarka nie potrafi ani jednego, ani drugiego ze strony <span class="mono">file://</span>. Używane są ścieżki domyślne; można je zmienić w „Ścieżki”.',
     scan: 'Skanuj moje pliki konfiguracyjne',
+    scanRoot: 'Folder do przeskanowania',
+    scanDo: 'Skanuj ten folder',
+    scanBrowse: 'Wybierz folder…',
+    pickFor: 'Szukaj dla',
+    useThisDir: 'Użyj tego folderu',
+    upDir: 'W górę',
+    cancel: 'Anuluj',
+    noMatch: 'Nie znaleziono tutaj pliku konfiguracyjnego.',
+    pickOne: 'Znaleziono kilka plików — wybierz ten do edycji:',
     rescan: 'Skanuj ponownie',
     deep: 'Szukaj także głębiej (jeśli pliki są poza ścieżkami domyślnymi)',
     thHarness: 'Harness',
@@ -3151,7 +3223,7 @@ window.__app = { state, TARGETS, CORE, YCORE, detectAndRender, previewTarget, wr
     let res;
     try {
       state.paths = state.paths || loadPaths();
-      res = await jpost('/api/scan', { root: BR.home, deep: true, paths: state.paths });
+      res = await jpost('/api/scan', { root: state.scanRoot || BR.home, deep: true, paths: state.paths });
     }
     catch (e) {
       $('#detectOut').innerHTML = '<span class="err">' + t('errScan') + ' : ' + esc(e.message) + '</span>';
@@ -3159,6 +3231,8 @@ window.__app = { state, TARGETS, CORE, YCORE, detectAndRender, previewTarget, wr
       return;
     }
     state.root = res.root;
+    state.scanInfo = res.scan || null;
+    state.rawItems = res.items;
     state.targets = res.items.map(it => ({
       id: it.id, label: it.label, format: it.format, flavor: it.flavor, color: it.color,
       note: it.note, envPrefix: it.envPrefix, envPath: it.envPath,
@@ -3271,6 +3345,7 @@ window.__app = { state, TARGETS, CORE, YCORE, detectAndRender, previewTarget, wr
       const st = await r.json();
       if (!st || !st.ok) return false;
       BR.ok = true; BR.home = st.home; BR.port = st.port; BR.version = st.version;
+      BR.harnesses = st.harnesses || [];
       return true;
     } catch (e) { return false; }
   }
@@ -3298,6 +3373,156 @@ window.__app = { state, TARGETS, CORE, YCORE, detectAndRender, previewTarget, wr
     document.getElementById('btnRedetect').disabled = false;
     await bridgeScan();
   });
+
+  /* ------------------------------------------------------------------
+     2 bis. racine de scan + choix manuel d'un dossier par harnais
+     ------------------------------------------------------------------ */
+  function scanBar() {
+    const opts = (BR.harnesses || []).map(h =>
+      '<option value="' + escA(h.id) + '">' + esc(h.label) + '</option>').join('');
+    return '<div class="bar" id="scanBar" style="margin-bottom:10px">' +
+      '<span class="hint" style="margin:0">' + t('scanRoot') + '</span>' +
+      '<input id="scanRootInput" type="text" spellcheck="false" style="flex:1 1 260px;min-width:160px" value="' +
+        escA(state.scanRoot || BR.home) + '">' +
+      '<button class="mini" id="btnScanRoot">' + t('scanDo') + '</button>' +
+      '<span class="hint" style="margin:0">' + t('pickFor') + '</span>' +
+      '<select id="pickHarness" style="width:auto">' + opts + '</select>' +
+      '<button class="mini ghost" id="btnBrowseDir">' + t('scanBrowse') + '</button>' +
+      '</div>';
+  }
+
+  function wireScanBar() {
+    const go = $('#btnScanRoot'), inp = $('#scanRootInput'), pick = $('#btnBrowseDir');
+    const launch = () => {
+      state.scanRoot = ((inp && inp.value) || '').trim() || BR.home;
+      bridgeScan();
+    };
+    if (go) go.addEventListener('click', launch);
+    if (inp) inp.addEventListener('keydown', ev => { if (ev.key === 'Enter') launch(); });
+    if (pick) pick.addEventListener('click', () => {
+      const sel = $('#pickHarness');
+      openBrowser(state.scanRoot || BR.home, sel ? sel.value : '');
+    });
+  }
+
+  async function openBrowser(path, harnessId) {
+    state.browse = { path: path, harness: harnessId || (BR.harnesses[0] || {}).id };
+    await showBrowser();
+  }
+
+  async function showBrowser() {
+    const b = state.browse;
+    if (!b) return;
+    const out = $('#detectOut');
+    out.innerHTML = '<span class="spin"></span>';
+    let r;
+    try {
+      const resp = await fetch('/api/browse?path=' + encodeURIComponent(b.path), { credentials: 'same-origin' });
+      r = await resp.json();
+    } catch (e) { out.innerHTML = '<span class="err">' + esc(e.message) + '</span>'; return; }
+    if (!r || !r.ok) { out.innerHTML = '<span class="err">' + esc((r && r.error) || '?') + '</span>'; return; }
+    b.path = r.path;
+    const chips = r.dirs.map(d =>
+      '<span class="chip" data-nav="' + escA(d.path) + '">' + esc(d.name) + '</span>').join(' ') ||
+      '<span class="dim">—</span>';
+    out.innerHTML = scanBar() +
+      '<div class="card" style="margin-top:0"><div class="hd"><b class="mono" style="font-size:12px">' + esc(r.path) + '</b>' +
+        '<span class="dim">' + r.dirs.length + '</span><span style="flex:1"></span>' +
+        (r.parent ? '<button class="mini ghost" data-nav="' + escA(r.parent) + '">↰ ' + t('upDir') + '</button>' : '') +
+        '<button class="mini primary" id="btnUseDir">' + t('useThisDir') + '</button>' +
+        '<button class="mini ghost" id="btnCancelBrowse">' + t('cancel') + '</button></div>' +
+      '<div class="bd"><div class="bar" style="gap:6px">' + chips + '</div></div></div>' +
+      '<div id="browseResult" style="margin-top:8px"></div>';
+    wireScanBar();
+    const pick = $('#pickHarness');
+    if (pick && b.harness) pick.value = b.harness;
+    $$('#detectOut [data-nav]').forEach(c => c.addEventListener('click', () => {
+      b.path = c.getAttribute('data-nav');
+      showBrowser();
+    }));
+    $('#btnUseDir').addEventListener('click', useCurrentDir);
+    $('#btnCancelBrowse').addEventListener('click', () => bridgeScan());
+  }
+
+  async function useCurrentDir() {
+    const b = state.browse;
+    const pick = $('#pickHarness');
+    const harness = (pick && pick.value) || b.harness;   // le <select> fait foi
+    const box = $('#browseResult');
+    box.innerHTML = '<span class="spin"></span>';
+    let r;
+    try { r = await jpost('/api/find', { path: b.path, harness: harness }); }
+    catch (e) { box.innerHTML = '<span class="err">' + esc(e.message) + '</span>'; return; }
+    if (!r.matches.length) { box.innerHTML = '<div class="err">' + t('noMatch') + '</div>'; return; }
+    if (r.matches.length === 1) { applyDirChoice(harness, r.matches[0].path); return; }
+    box.innerHTML = '<div class="hint">' + t('pickOne') + '</div><div class="bar">' +
+      r.matches.map(m => '<span class="chip" data-use="' + escA(m.path) + '">' + esc(m.path) + '</span>').join(' ') + '</div>';
+    $$('#browseResult [data-use]').forEach(c => c.addEventListener('click', () =>
+      applyDirChoice(harness, c.getAttribute('data-use'))));
+  }
+
+  function applyDirChoice(harnessId, filePath) {
+    state.paths = state.paths || {};
+    state.paths[harnessId] = Object.assign({}, state.paths[harnessId] || {}, { config: filePath });
+    try { localStorage.setItem('llmbridge.paths', JSON.stringify(state.paths)); } catch (e) {}
+    logMsg(harnessId + ' → ' + filePath, 'ok');
+    bridgeScan();
+  }
+
+  const _renderDetect = renderDetect;
+  renderDetect = function (list) {
+    _renderDetect(list);
+    if (!BR.ok) return;
+    const out = $('#detectOut');
+    if (!out) return;
+    if (!$('#scanBar')) out.insertAdjacentHTML('afterbegin', scanBar());
+    wireScanBar();
+    const info = state.scanInfo;
+    if (info && $('#scanBar')) {
+      const txt = info.entries + ' · ' + info.seconds + ' s' + (info.truncated ? ' · partiel' : '');
+      const span = document.createElement('span');
+      span.className = 'hint';
+      span.style.margin = '0';
+      span.textContent = txt;
+      $('#scanBar').appendChild(span);
+    }
+  };
+
+  const _renderCards = renderCards;
+  renderCards = function () {
+    _renderCards();
+    if (!BR.ok) return;
+    const raw = state.rawItems || [];
+    state.targets.forEach(tg => {
+      const card = document.getElementById('card-' + tg.id);
+      if (!card) return;
+      const hd = card.querySelector('.hd');
+      if (hd && !hd.querySelector('[data-pickdir]')) {
+        const b = document.createElement('button');
+        b.className = 'mini ghost';
+        b.setAttribute('data-pickdir', tg.id);
+        b.textContent = '📁';
+        b.title = t('pickFor') + ' ' + tg.label;
+        b.addEventListener('click', () => openBrowser(state.scanRoot || BR.home, tg.id));
+        hd.insertBefore(b, hd.querySelector('[data-refill]'));
+      }
+      const it = raw.find(x => x.id === tg.id);
+      const cands = (it && it.candidates) || [];
+      const body = card.querySelector('.bd');
+      if (cands.length > 1 && body && !body.querySelector('[data-cand]')) {
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.style.marginBottom = '8px';
+        row.innerHTML = '<div class="g1"><label>' + t('pickOne') + '</label><select data-cand="' +
+          escA(tg.id) + '">' + cands.map(c => '<option value="' + escA(c.path) + '"' +
+          (tg.file && c.path === tg.file.path ? ' selected' : '') + '>' + esc(c.path) +
+          (c.origin ? '  ·  ' + esc(c.origin) : '') + '</option>').join('') +
+          '</select></div>';
+        body.prepend(row);
+        row.querySelector('select').addEventListener('change', ev => applyDirChoice(tg.id, ev.target.value));
+      }
+    });
+  };
 
   window.__bridge = BR;
 })();
