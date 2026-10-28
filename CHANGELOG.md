@@ -3,6 +3,27 @@
 Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) · versionnage
 [SemVer](https://semver.org/lang/fr/).
 
+## [3.3.0] — 2026-10-28
+
+### Ajouté
+- **Création de la configuration quand elle n'existe pas encore.** opencode ne crée
+  `opencode.jsonc` qu'une fois un fournisseur ajouté : sur une installation neuve,
+  l'outil disait « absent » alors que le harnais était installé. Il affiche maintenant
+  « INSTALLÉ · config absente », propose la carte, et écrit le fichier (dossiers
+  parents compris) au premier enregistrement.
+- **Recherche du binaire par motifs** : `%LOCALAPPDATA%\Programs\*\resources\opencode-cli.exe`
+  couvre `ai.opencode.desktop`, `@opencodedesktop`, `opencode`… sans énumérer chaque
+  variante d'installeur.
+- `--diagnose` : binaire retenu, candidats et origine de chaque chemin, mode de création.
+
+### Corrigé
+- le parcours du profil est maintenant en largeur et commence par les dossiers utiles :
+  le budget de 8 s se consumait dans `AppData/Local` avant d'atteindre `AppData/Roaming`.
+- après une sonde, les champs dérivés de l'endpoint (baseURL, identifiant automatique,
+  nom affiché) sont rafraîchis au lieu de rester sur une valeur précédente.
+- les assets de release portent la version (`LLMBridge-vX.Y.Z-windows-x64.exe`,
+  `…-linux-x64`, `…-source.zip`).
+
 ## [3.2.1] — 2026-10-28
 
 ### Modifié

@@ -46,6 +46,7 @@ import tempfile
 import threading
 import time
 import webbrowser
+from collections import deque
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib import error as urlerr
@@ -53,7 +54,7 @@ from urllib import request as urlreq
 from urllib.parse import parse_qs, urlsplit
 
 APP = "llm-bridge"
-VERSION = "3.2.1"
+VERSION = "3.3.0"
 DEFAULT_PORT = 8766
 MAX_HTTP_BODY = 8 * 1024 * 1024      # réponse max d'une requête proxifiée
 MAX_REQ_BODY = 16 * 1024 * 1024      # corps max accepté par l'API
@@ -90,9 +91,18 @@ HARNESS = [
         "bins": [],
         "probe_paths": [
             r"%LOCALAPPDATA%\Programs\@opencodedesktop\resources\opencode-cli.exe",
+            r"%LOCALAPPDATA%\Programs\ai.opencode.desktop\resources\opencode-cli.exe",
             r"%LOCALAPPDATA%\Programs\opencode\resources\opencode-cli.exe",
             r"%PROGRAMFILES%\opencode\resources\opencode-cli.exe",
             "/opt/opencode/resources/opencode-cli",
+        ],
+        "probe_globs": [
+            r"%LOCALAPPDATA%\Programs\*\resources\opencode-cli.exe",
+            r"%LOCALAPPDATA%\Programs\*\opencode-cli.exe",
+            r"%LOCALAPPDATA%\Programs\*\opencode-cli",
+            r"%APPDATA%\*\resources\opencode-cli.exe",
+            "~/.local/share/*/opencode-cli",
+            "/opt/*/resources/opencode-cli",
         ],
     },
     {
@@ -133,6 +143,8 @@ SKIP_DIRS = {
     "dawncache", "shadercache", "webcache", "platformcache", "dictionaries",
     "logs", "crashes", "temp", "tmp", "windowsapps", "$recycle.bin",
     "system volume information", "program files", "program files (x86)", "programdata",
+    "packages", "microsoft", "crashdumps", "d3dscache", "nvidia", "pip",
+    "npm-cache", "_cacache", "electron", "installer", "squirreltemp",
 }
 
 # Fichiers de configuration reconnus, par harnais : (dossier parent, nom de fichier).
@@ -217,7 +229,9 @@ def expand_path(value: str) -> str:
 def scan_tree(root: str, budget: float = 8.0) -> tuple[dict, dict]:
     """Un seul parcours du profil, AppData et dossiers masqués compris.
 
-    Rend ``{harnais: [fichiers trouvés]}`` plus quelques statistiques pour l'UI.
+    Parcours en largeur, en commençant par les dossiers où les harnais écrivent
+    réellement : sinon un budget de quelques secondes partait se perdre dans
+    ``AppData/Local`` avant d'atteindre ``AppData/Roaming``.
     """
     rules: dict = {}
     for hid, pairs in MATCH.items():
@@ -230,14 +244,29 @@ def scan_tree(root: str, budget: float = 8.0) -> tuple[dict, dict]:
     seen = 0
     root_abs = os.path.abspath(root)
     base = len(root_abs.rstrip(os.sep).split(os.sep))
-    stack = [root_abs]
+    queue: deque = deque()
+
+    # 1. les emplacements plausibles d'abord (BFS), le reste du profil ensuite
+    for rel in (".config/opencode", ".hermes", ".dsh", ".config", ".local/share",
+                "AppData/Roaming", "AppData/Local/Programs", "AppData/Local",
+                "Library/Application Support"):
+        candidate = os.path.join(root_abs, *rel.split("/"))
+        if os.path.isdir(candidate):
+            queue.append(candidate)
+    queue.append(root_abs)
+
+    visited: set = set()
     truncated = False
 
-    while stack:
+    while queue:
         if time.monotonic() > deadline or seen > MAX_ENTRIES:
             truncated = True
             break
-        current = stack.pop()
+        current = queue.popleft()
+        stamp = os.path.normcase(current)
+        if stamp in visited:
+            continue
+        visited.add(stamp)
         if len(current.rstrip(os.sep).split(os.sep)) - base >= MAX_DEPTH:
             continue
         try:
@@ -251,7 +280,7 @@ def scan_tree(root: str, budget: float = 8.0) -> tuple[dict, dict]:
             try:
                 if entry.is_dir(follow_symlinks=False):
                     if entry.name.lower() not in SKIP_DIRS:
-                        stack.append(entry.path)
+                        queue.append(entry.path)
                 elif entry.is_file(follow_symlinks=False):
                     for want_parent, hid in rules.get(entry.name.lower(), ()):
                         if want_parent != parent:
@@ -328,6 +357,8 @@ def harness_item(h: dict, root: str, tree: dict | None = None, overrides: dict |
     exe, exe_source = find_exe(h) if h.get("bins") or h.get("probe_paths") else (None, None)
     item["binary"] = exe
     item["binary_source"] = exe_source
+    pkg_hit = pkg_version(h["pkg"]) if h.get("pkg") else None
+    item["installed"] = bool(exe or pkg_hit)
 
     cands: list[str] = []
     origins: dict = {}
@@ -363,6 +394,7 @@ def harness_item(h: dict, root: str, tree: dict | None = None, overrides: dict |
         if h.get("path_cmd") and exe:
             announced = cli_path_cmd(exe, h["path_cmd"])
             if announced and (same_home or _inside(announced, root)):
+                item["announced"] = announced
                 add(announced, "cli")
             if h.get("env_path_cmd"):
                 env_announced = cli_path_cmd(exe, h["env_path_cmd"])
@@ -389,6 +421,24 @@ def harness_item(h: dict, root: str, tree: dict | None = None, overrides: dict |
     if cfg is None and item["path"] and os.path.isfile(item["path"]):
         cfg = item["path"]
     item["deep"] = len(cands) > 1
+
+    # harnais installé mais jamais configuré : le fichier n'existe pas encore.
+    # On retient l'endroit où l'écrire, et l'interface propose la création.
+    item["createPath"] = None
+    if not cfg:
+        home = os.path.realpath(os.path.expanduser("~"))
+        same_home = os.path.realpath(root).lower() == home.lower()
+        options = []
+        for path, _label, _var in env_candidates(h):
+            if same_home or _inside(path, root):
+                options.append(path)
+        if item["customDir"]:
+            options.append(os.path.join(item["customDir"], os.path.basename(h["config"][0])))
+        if item.get("announced"):
+            options.append(item["announced"])
+        options.append(item["defaults"]["config"])
+        item["createPath"] = os.path.abspath(options[0])
+    item["canCreate"] = bool(item["installed"] and not cfg)
 
     if cfg:
         st = os.stat(cfg)
@@ -430,6 +480,8 @@ def scan(root: str, deep: bool, overrides: dict | None = None) -> dict:
             allowed.add(os.path.realpath(it["path"]).lower())
         if it["env"] and it["env"].get("exists"):
             allowed.add(os.path.realpath(it["env"]["path"]).lower())
+        if it.get("createPath"):
+            allowed.add(os.path.realpath(it["createPath"]).lower())
     Ctx.allowed = allowed
     return {"ok": True, "root": root, "items": items, "version": VERSION, "scan": stats}
 
@@ -480,6 +532,7 @@ def do_write(path: str, text: str) -> dict:
         stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
         backup = f"{real}.bak-{stamp}"
         shutil.copy2(real, backup)
+    os.makedirs(os.path.dirname(real), exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=os.path.dirname(real), prefix=".llmbridge-", suffix=".tmp")
     try:
         with os.fdopen(fd, "w", encoding="utf-8", newline="") as f:
@@ -523,7 +576,12 @@ def _run_version(exe: str) -> str | None:
 
 
 def find_exe(h: dict) -> tuple[str | None, str | None]:
-    """Cherche le binaire d'un harnais : PATH d'abord, puis emplacements connus."""
+    """Cherche le binaire d'un harnais : PATH, emplacements connus, puis motifs glob.
+
+    Les installeurs changent de dossier d'une machine à l'autre
+    (`@opencodedesktop`, `ai.opencode.desktop`, `opencode`…) : les motifs évitent
+    d'avoir à les énumérer un par un.
+    """
     for name in h.get("bins", []):
         exe = shutil.which(name)
         if exe:
@@ -532,6 +590,15 @@ def find_exe(h: dict) -> tuple[str | None, str | None]:
         exe = expand_path(candidate)
         if exe and os.path.isfile(exe):
             return exe, "install"
+    for pattern in h.get("probe_globs", []):
+        expanded = expand_path(pattern)
+        for exe in sorted(glob.glob(expanded)):
+            if not os.path.isfile(exe):
+                continue
+            # on ne lance que ce qui porte le nom du harnais : un dossier voisin
+            # ne doit pas faire exécuter un binaire quelconque
+            if h["id"].split("-")[0].lower() in exe.lower():
+                return exe, "glob"
     return None, None
 
 
@@ -922,16 +989,29 @@ def running_port(port: int) -> bool:
         return False
 
 
-def list_harnesses(root: str) -> int:
+def list_harnesses(root: str, diagnose: bool = False) -> int:
     print(f"racine : {root}")
     data = scan(root, deep=True, overrides={})
+    stats = data.get("scan") or {}
+    print(f"parcours : {stats.get('entries', 0)} entrees · {stats.get('seconds', 0)} s"
+          + (" · PARTIEL (budget atteint)" if stats.get("truncated") else ""))
     for item in data["items"]:
         if item["exists"]:
             extra = " (+ .env)" if item["env"] and item["env"]["exists"] else ""
             tail = "  [chemin personnalisé]" if item["custom"] else ""
             print(f"  [x] {item['label']:<24} {item['path']}  {item['size']} o{extra}{tail}")
+        elif item.get("installed"):
+            print(f"  [~] {item['label']:<24} installé, config absente → serait créée : "
+                  f"{item.get('createPath')}")
         else:
-            print(f"  [ ] {item['label']:<24} absent")
+            print(f"  [ ] {item['label']:<24} absent (ni binaire ni paquet npm)")
+        if diagnose:
+            print(f"      binaire  : {item.get('binary') or '—'}")
+            for cand in item.get("candidates", [])[:8]:
+                print(f"      candidat : {cand['path']}  [{cand.get('origin') or '?'}]")
+            if item["env"]:
+                print(f"      .env     : {item['env'].get('path')} "
+                      f"({'trouvé' if item['env'].get('exists') else 'absent'})")
     print("\nversions :")
     for hid, info in versions().get("detected", {}).items():
         state = "vérifiée" if info.get("match") else ("non vérifiée" if info.get("raw") else "inconnue")
@@ -957,6 +1037,8 @@ def main() -> int:
     ap.add_argument("--insecure", action="store_true",
                     help="ignorer les certificats TLS (API https auto-signée)")
     ap.add_argument("--list", action="store_true", help="harnais + versions détectés, puis quitter")
+    ap.add_argument("--diagnose", action="store_true",
+                    help="comme --list, avec le détail des candidats et des binaires")
     ap.add_argument("--version", action="version", version=f"{APP} {VERSION}")
     args = ap.parse_args()
 
@@ -974,8 +1056,8 @@ def main() -> int:
               "l'interface est embarquée — utilisez --html pour la remplacer)", file=sys.stderr)
         return 2
 
-    if args.list:
-        return list_harnesses(Ctx.root)
+    if args.list or args.diagnose:
+        return list_harnesses(Ctx.root, args.diagnose)
 
     if running_port(args.port):
         url = f"http://127.0.0.1:{args.port}/"

@@ -20,9 +20,10 @@ It’s probably entirely pointless, but it’s all hand-crafted! Well... it’s 
 
 ### 1. Binary (nothing to install)
 
-Download `LLMBridge.exe` (Windows) or `LLMBridge` (Linux) from
-[Releases](../../releases) and double-click it. Your browser opens
-<http://127.0.0.1:8766/>.
+Download `LLMBridge-vX.Y.Z-windows-x64.exe` (Windows) or `LLMBridge-vX.Y.Z-linux-x64`
+(Linux) from [Releases](../../releases) — the asset name carries the version, and a
+`LLMBridge-vX.Y.Z-source.zip` archive is published alongside — and double-click it.
+Your browser opens <http://127.0.0.1:8766/>.
 
 ### 2. Python script (no build step)
 

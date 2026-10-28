@@ -17,9 +17,10 @@ Ca ne sert probablement à rien, mais c'est cousu main ! Enfin ... hebergé et m
 
 ### 1. Binaire (rien à installer)
 
-Téléchargez `LLMBridge.exe` (Windows) ou `LLMBridge` (Linux) dans les
-[Releases](../../releases) et double-cliquez. Le navigateur ouvre
-<http://127.0.0.1:8766/>.
+Téléchargez `LLMBridge-vX.Y.Z-windows-x64.exe` (Windows) ou `LLMBridge-vX.Y.Z-linux-x64`
+(Linux) dans les [Releases](../../releases) — le nom du fichier porte la version, et une
+archive `LLMBridge-vX.Y.Z-source.zip` est publiée à côté — puis double-cliquez. Le
+navigateur ouvre <http://127.0.0.1:8766/>.
 
 ### 2. Script Python (sans compilation)
 

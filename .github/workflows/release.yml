@@ -19,11 +19,11 @@ jobs:
           - os: windows-latest
             name: windows-x64
             artifact: LLMBridge.exe
-            asset: LLMBridge-windows-x64.exe
+            ext: .exe
           - os: ubuntu-latest
             name: linux-x64
             artifact: LLMBridge
-            asset: LLMBridge-linux-x64
+            ext: ""
     steps:
       - uses: actions/checkout@v4
 
@@ -39,13 +39,33 @@ jobs:
       - name: Build
         run: pyinstaller --clean --noconfirm llm-bridge.spec
 
-      - name: Rename asset
+      # Le nom de l'asset porte la version du tag : LLMBridge-v3.3.0-windows-x64.exe
+      - name: Rename asset with version
+        id: pack
         shell: bash
-        run: cp "dist/${{ matrix.artifact }}" "dist/${{ matrix.asset }}"
+        run: |
+          name="LLMBridge-${GITHUB_REF_NAME}-${{ matrix.name }}${{ matrix.ext }}"
+          cp "dist/${{ matrix.artifact }}" "dist/$name"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          ls -lh "dist/$name"
 
-      - name: Upload to release
+      # Archive des sources versionnée elle aussi (en plus du zip automatique de GitHub)
+      - name: Source archive (versioned)
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: |
+          git archive --format=zip --prefix="LLMBridge-${GITHUB_REF_NAME}/" \
+            -o "dist/LLMBridge-${GITHUB_REF_NAME}-source.zip" HEAD
+
+      - name: Upload binary to release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/${{ matrix.asset }}
+          files: dist/${{ steps.pack.outputs.name }}
           generate_release_notes: true
           body_path: CHANGELOG.md
+
+      - name: Upload source archive to release
+        if: matrix.os == 'ubuntu-latest'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/LLMBridge-${{ github.ref_name }}-source.zip
