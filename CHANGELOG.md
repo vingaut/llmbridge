@@ -3,6 +3,14 @@
 Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) · versionnage
 [SemVer](https://semver.org/lang/fr/).
 
+## [3.3.1] — 2026-10-28
+
+### Corrigé
+- un binaire qui n'est pas une image PE valide (fichier vide, texte renommé `.exe`,
+  installation npm interrompue) n'est plus exécuté. Windows affichait sinon
+  « Application 16 bits non prise en charge » au moindre `--version` de sondage.
+  Les fichiers écartés apparaissent sous « ignoré » dans `--diagnose`.
+
 ## [3.3.0] — 2026-10-28
 
 ### Ajouté

@@ -54,7 +54,7 @@ from urllib import request as urlreq
 from urllib.parse import parse_qs, urlsplit
 
 APP = "llm-bridge"
-VERSION = "3.3.0"
+VERSION = "3.3.1"
 DEFAULT_PORT = 8766
 MAX_HTTP_BODY = 8 * 1024 * 1024      # réponse max d'une requête proxifiée
 MAX_REQ_BODY = 16 * 1024 * 1024      # corps max accepté par l'API
@@ -354,7 +354,11 @@ def harness_item(h: dict, root: str, tree: dict | None = None, overrides: dict |
         },
     }
 
-    exe, exe_source = find_exe(h) if h.get("bins") or h.get("probe_paths") else (None, None)
+    rejected: list = []
+    exe, exe_source = (find_exe(h, rejected)
+                       if h.get("bins") or h.get("probe_paths") or h.get("probe_globs")
+                       else (None, None))
+    item["rejected_binaries"] = rejected
     item["binary"] = exe
     item["binary_source"] = exe_source
     pkg_hit = pkg_version(h["pkg"]) if h.get("pkg") else None
@@ -575,7 +579,47 @@ def _run_version(exe: str) -> str | None:
     return None
 
 
-def find_exe(h: dict) -> tuple[str | None, str | None]:
+def is_valid_image(path: str) -> bool:
+    """Le fichier est-il un exécutable réellement lançable sur cette plateforme ?
+
+    Windows affiche « Application 16 bits non prise en charge » pour tout fichier
+    qui n'est pas une image PE valide (stub vide, fichier texte renommé .exe,
+    installation npm interrompue). On refuse de l'exécuter : la boîte de dialogue
+    du système ne doit jamais apparaître à cause d'une sonde de version.
+    """
+    if not path or not os.path.isfile(path):
+        return False
+    try:
+        size = os.path.getsize(path)
+    except OSError:
+        return False
+    if size < 64:
+        return False
+    if sys.platform != "win32":
+        return True
+    ext = os.path.splitext(path)[1].lower()
+    if ext in (".cmd", ".bat", ".ps1"):
+        return True
+    if ext not in (".exe", ".com"):
+        return False
+    try:
+        with open(path, "rb") as fh:
+            if fh.read(2) != b"MZ":
+                return False
+            fh.seek(0x3C)
+            raw = fh.read(4)
+            if len(raw) < 4:
+                return False
+            offset = int.from_bytes(raw, "little")
+            if offset <= 0 or offset + 24 > size:
+                return False
+            fh.seek(offset)
+            return fh.read(2) == b"PE"
+    except OSError:
+        return False
+
+
+def find_exe(h: dict, rejected: list | None = None) -> tuple[str | None, str | None]:
     """Cherche le binaire d'un harnais : PATH, emplacements connus, puis motifs glob.
 
     Les installeurs changent de dossier d'une machine à l'autre
@@ -585,11 +629,17 @@ def find_exe(h: dict) -> tuple[str | None, str | None]:
     for name in h.get("bins", []):
         exe = shutil.which(name)
         if exe:
-            return exe, "PATH"
+            if is_valid_image(exe):
+                return exe, "PATH"
+            if rejected is not None:
+                rejected.append(exe)
     for candidate in h.get("probe_paths", []):
         exe = expand_path(candidate)
         if exe and os.path.isfile(exe):
-            return exe, "install"
+            if is_valid_image(exe):
+                return exe, "install"
+            if rejected is not None:
+                rejected.append(exe)
     for pattern in h.get("probe_globs", []):
         expanded = expand_path(pattern)
         for exe in sorted(glob.glob(expanded)):
@@ -597,8 +647,12 @@ def find_exe(h: dict) -> tuple[str | None, str | None]:
                 continue
             # on ne lance que ce qui porte le nom du harnais : un dossier voisin
             # ne doit pas faire exécuter un binaire quelconque
-            if h["id"].split("-")[0].lower() in exe.lower():
+            if h["id"].split("-")[0].lower() not in exe.lower():
+                continue
+            if is_valid_image(exe):
                 return exe, "glob"
+            if rejected is not None:
+                rejected.append(exe)
     return None, None
 
 
@@ -1007,6 +1061,8 @@ def list_harnesses(root: str, diagnose: bool = False) -> int:
             print(f"  [ ] {item['label']:<24} absent (ni binaire ni paquet npm)")
         if diagnose:
             print(f"      binaire  : {item.get('binary') or '—'}")
+            for bad in item.get("rejected_binaries", []):
+                print(f"      ignoré   : {bad}  (image PE invalide ou fichier vide)")
             for cand in item.get("candidates", [])[:8]:
                 print(f"      candidat : {cand['path']}  [{cand.get('origin') or '?'}]")
             if item["env"]:
