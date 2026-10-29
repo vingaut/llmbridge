@@ -3004,10 +3004,15 @@ function cardOptions(t){
   const models = (getVal(id, 'allModels') && exposed.length ? exposed : [modelId]).map(x => ({
     id: x, name: x.split('/').pop(), contextWindow: num('ctx'), maxTokens: num('out'),
     image: !!(info && CORE.hasVision(info.modalities)), reasoningEfforts: efforts }));
+  // dsh exige une référence de credential même quand l'endpoint n'en demande pas :
+  // pi-ai lève « No API key for provider » sinon, avant toute requête.
+  const pid = getVal(id, 'providerId') || getVal(id, 'id');
+  const dshEnv = ((($('#card-' + id + ' [data-envname]') || {}).value || '').trim())
+                 || (pid ? TARGETS.upper(pid) + '_API_KEY' : null);
   return Object.assign(common, {
     mode: modeOf(id), id: getVal(id, 'providerId'), entryId: 'llm-pi-ai',
     displayName: getVal(id, 'providerName') || getVal(id, 'providerId'),
-    apiKeyEnv: keyEnvFor(t, id),
+    apiKeyEnv: dshEnv,
     streamIdleTimeoutMs: num('idle'), defaultMaxTokens: num('dmt'),
     thinking: getVal(id, 'thinking'), preserveThinking: getVal(id, 'preserve'),
     models, setActive: getVal(id, 'setActive'), modelID: modelId, reasoningEffort: getVal(id, 'effortDef') || null });
@@ -3350,15 +3355,20 @@ window.__app = { state, TARGETS, CORE, YCORE, detectAndRender, previewTarget, wr
     catch (e) { logMsg(t.label + ' : écriture refusée — ' + esc(e.message), 'er'); return false; }
 
     // une clé a été saisie et le harnais lit une variable : on l'écrit dans son .env,
-    // sinon le fournisseur resterait sans clé alors que l'utilisateur en a fourni une
+    // sinon le fournisseur resterait sans clé alors que l'utilisateur en a fourni une.
+    // dsh exige de toute façon une valeur : « none » pour un endpoint sans authentification.
     const envName = (($('#card-' + id + ' [data-envname]') || {}).value || '').trim();
     const typedKey = ($('#apikey').value || '').trim();
-    if (envName && typedKey && t.env && t.env.path) {
-      const next = TARGETS.envUpsert(t.env.text || '', envName, typedKey);
+    const stored = (t.env && envName) ? envValueOf(t.env.text, envName) : null;
+    const placeholder = (t.flavor === 'dsh') ? 'none' : '';
+    const envValue = typedKey || stored || placeholder;
+    if (envName && envValue && t.env && t.env.path) {
+      const next = TARGETS.envUpsert(t.env.text || '', envName, envValue);
       try {
         await jpost('/api/write', { path: t.env.path, text: next });
         t.env.text = next; t.env.exists = true;
-        logMsg(t.label + ' : clé enregistrée dans ' + esc(t.env.path), 'ok');
+        logMsg(t.label + ' : clé ' + (typedKey ? 'enregistrée' : 'de substitution') +
+               ' dans ' + esc(t.env.path), 'ok');
       } catch (e) {
         logMsg(t.label + ' : clé non enregistrée — ' + esc(e.message), 'w');
       }

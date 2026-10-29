@@ -3,6 +3,19 @@
 Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) · versionnage
 [SemVer](https://semver.org/lang/fr/).
 
+## [3.3.3] — 2026-10-29
+
+### Corrigé
+- **dsh exige une référence de credential, même sans authentification.** `apiKeyEnv`
+  est déclaré dans son schéma comme `credential-ref` : pi-ai lève
+  `No API key for provider: <id>` dès que la référence est absente, avant toute
+  requête (vérifié dans `pi-ai/dist/api/openai-completions.js`, `getClientApiKey`).
+  Le retirer en 3.3.2 était donc une erreur : il est désormais **toujours** écrit,
+  et `$DSH_HOME/.env` reçoit la valeur — la clé saisie, ou `none` pour un endpoint
+  sans authentification (source de repli documentée du service de credentials).
+- Hermes conserve la règle inverse (`key_env` seulement si une clé existe) : il
+  tolère une variable absente, contrairement à dsh.
+
 ## [3.3.2] — 2026-10-29
 
 ### Corrigé

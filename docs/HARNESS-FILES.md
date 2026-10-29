@@ -69,9 +69,12 @@ model:
 
 ## dsh — `~/.dsh/cordis.patch.yml`
 
-`apiKeyEnv` n'est écrit **que si une clé existe** (saisie dans l'interface ou déjà
-présente dans `~/.dsh/.env`). Un `apiKeyEnv` orphelin fait réclamer une clé à dsh au
-moment de la requête, même si l'endpoint n'en demande pas. (+ `.env`)
+`apiKeyEnv` est **toujours** écrit : le schéma de dsh le déclare `credential-ref`, et
+pi-ai refuse la requête (`No API key for provider`) quand la référence manque, même si
+l'endpoint n'en demande pas. La valeur va dans `~/.dsh/.env` — la clé réelle si elle est
+fournie, sinon `none` (dsh envoie alors `Authorization: Bearer none`, ignoré par
+llama.cpp / vLLM / Ollama). Le magasin géré de dsh (`~/.dsh/.credentials.yaml`) prime
+sur ce fichier : si un refus persiste, saisir la clé depuis la page Models de dsh. (+ `.env`)
 
 Fournisseur sous `llm-pi-ai → config.providers`, et `agent-default-model`.
 
