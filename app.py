@@ -54,7 +54,7 @@ from urllib import request as urlreq
 from urllib.parse import parse_qs, urlsplit
 
 APP = "llm-bridge"
-VERSION = "3.3.1"
+VERSION = "3.3.2"
 DEFAULT_PORT = 8766
 MAX_HTTP_BODY = 8 * 1024 * 1024      # réponse max d'une requête proxifiée
 MAX_REQ_BODY = 16 * 1024 * 1024      # corps max accepté par l'API
@@ -482,7 +482,7 @@ def scan(root: str, deep: bool, overrides: dict | None = None) -> dict:
     for it in items:
         if it["exists"] and it["path"]:
             allowed.add(os.path.realpath(it["path"]).lower())
-        if it["env"] and it["env"].get("exists"):
+        if it["env"] and it["env"].get("path"):
             allowed.add(os.path.realpath(it["env"]["path"]).lower())
         if it.get("createPath"):
             allowed.add(os.path.realpath(it["createPath"]).lower())

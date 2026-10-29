@@ -67,7 +67,11 @@ model:
   mode `add` ;
 - mode `reset` : seuls `custom_providers` et `model` restent (très destructeur).
 
-## dsh — `~/.dsh/cordis.patch.yml` (+ `.env`)
+## dsh — `~/.dsh/cordis.patch.yml`
+
+`apiKeyEnv` n'est écrit **que si une clé existe** (saisie dans l'interface ou déjà
+présente dans `~/.dsh/.env`). Un `apiKeyEnv` orphelin fait réclamer une clé à dsh au
+moment de la requête, même si l'endpoint n'en demande pas. (+ `.env`)
 
 Fournisseur sous `llm-pi-ai → config.providers`, et `agent-default-model`.
 

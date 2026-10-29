@@ -2903,7 +2903,10 @@ function autoFillCards(force){
   state.targets.filter(t => t.found || t.create).forEach(t => {
     const id = t.id;
     if (filled[id] && !force) return;
-    const known = savedMode(id) === 'add' ? (t.summary && t.summary.providers || []).map(p => p.key) : [];
+    const current = String(getVal(id, 'providerId') || '').trim();
+    const known = savedMode(id) === 'add'
+      ? (t.summary && t.summary.providers || []).map(p => p.key).filter(k => k !== current)
+      : [];
     const d = TARGETS.defaults(info.base, m && m.id, known);
     const ctx = (m && m.context) || info.context || info.probed || '';
     const budget = ctx ? Math.min(32768, Math.floor(Number(ctx) / 4)) : '';
@@ -2945,7 +2948,27 @@ function useChip(spec){
   logMsg('Carte ' + t.label + '&nbsp;: valeurs reprises depuis le fournisseur existant « ' + esc(key) + ' »', 'i');
 }
 
-/* Options d’écriture à partir d’une carte. */
+/* Valeur d'une variable dans un .env (null si absente ou vide). */
+function envValueOf(text, name){
+  if (!text || !name) return null;
+  const re = new RegExp('^[ \\t]*(?:export[ \\t]+)?' + String(name).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=(.*)$', 'm');
+  const m = re.exec(text);
+  if (!m) return null;
+  const v = m[1].trim().replace(/^["']|["']$/g, '');
+  return v || null;
+}
+/* Nom de variable à écrire uniquement s'il y a réellement une clé derrière.
+   Un apiKeyEnv / key_env orphelin fait réclamer une clé à dsh (et à Hermes)
+   alors que l'endpoint n'en demande pas. */
+function keyEnvFor(t, id){
+  const name = (($('#card-' + id + ' [data-envname]') || {}).value || '').trim();
+  if (!name) return null;
+  const typed = ($('#apikey').value || '').trim();
+  const stored = (t && t.env) ? envValueOf(t.env.text, name) : null;
+  return (typed || stored) ? name : null;
+}
+
+/* Options d'écriture à partir d'une carte. */
 function cardOptions(t){
   const id = t.id;
   const num = k => { const v = getVal(id, k); return v === '' ? null : Number(v); };
@@ -2969,9 +2992,8 @@ function cardOptions(t){
       headers, body, variants, setAsModel: getVal(id, 'setAsModel'), overwrite: true, keepOther: true });
   }
   if (t.flavor === 'hermes'){
-    const envName = ($('#card-' + id + ' [data-envname]') || {}).value || '';
     return Object.assign(common, {
-      mode: modeOf(id), name: getVal(id, 'providerId'), keyEnv: envName.trim() || null,
+      mode: modeOf(id), name: getVal(id, 'providerId'), keyEnv: keyEnvFor(t, id),
       model: modelId, models: getVal(id, 'allModels') ? (exposed.length ? exposed : [modelId]) : [modelId],
       discovered: true, setActive: getVal(id, 'setActive'), context: num('ctx') });
   }
@@ -2985,7 +3007,7 @@ function cardOptions(t){
   return Object.assign(common, {
     mode: modeOf(id), id: getVal(id, 'providerId'), entryId: 'llm-pi-ai',
     displayName: getVal(id, 'providerName') || getVal(id, 'providerId'),
-    apiKeyEnv: (($('#card-' + id + ' [data-envname]') || {}).value || '').trim() || null,
+    apiKeyEnv: keyEnvFor(t, id),
     streamIdleTimeoutMs: num('idle'), defaultMaxTokens: num('dmt'),
     thinking: getVal(id, 'thinking'), preserveThinking: getVal(id, 'preserve'),
     models, setActive: getVal(id, 'setActive'), modelID: modelId, reasoningEffort: getVal(id, 'effortDef') || null });
@@ -3265,7 +3287,7 @@ window.__app = { state, TARGETS, CORE, YCORE, detectAndRender, previewTarget, wr
       const text = it.exists ? it.text : (TEMPLATE[it.flavor] || '');
       return {
       id: it.id, label: it.label, format: it.format, flavor: it.flavor, color: it.color,
-      note: it.note, envPrefix: it.envPrefix, envPath: it.envPath,
+      note: it.note, envPrefix: it.envPrefix, envPath: (it.env && it.env.path) || it.envPath || null,
       defaults: it.defaults, custom: !!it.custom, deep: !!it.deep,
       installed: !!it.installed, create: create, createPath: it.createPath || null,
       found: !!it.exists,
@@ -3273,9 +3295,9 @@ window.__app = { state, TARGETS, CORE, YCORE, detectAndRender, previewTarget, wr
                           text: text, path: target, mtime: it.mtime, server: true,
                           create: create,
                           handle: { server: true, path: target } } : null,
-      env: (it.env && it.env.exists) ? { name: '.env', size: it.env.size, text: it.env.text,
-                          path: it.env.path, server: true,
-                          handle: { server: true, path: it.env.path } } : null,
+      env: it.env ? { name: '.env', size: it.env.size || 0, text: it.env.text || '',
+                          path: it.env.path, server: true, exists: !!it.env.exists,
+                          handle: it.env.exists ? { server: true, path: it.env.path } : null } : null,
       summary: it.exists ? TARGETS.summarize(it.flavor, it.text) : null
       };
     });
@@ -3326,6 +3348,21 @@ window.__app = { state, TARGETS, CORE, YCORE, detectAndRender, previewTarget, wr
     let w;
     try { w = await jpost('/api/write', { path: t.file.path, text: res.text }); }
     catch (e) { logMsg(t.label + ' : écriture refusée — ' + esc(e.message), 'er'); return false; }
+
+    // une clé a été saisie et le harnais lit une variable : on l'écrit dans son .env,
+    // sinon le fournisseur resterait sans clé alors que l'utilisateur en a fourni une
+    const envName = (($('#card-' + id + ' [data-envname]') || {}).value || '').trim();
+    const typedKey = ($('#apikey').value || '').trim();
+    if (envName && typedKey && t.env && t.env.path) {
+      const next = TARGETS.envUpsert(t.env.text || '', envName, typedKey);
+      try {
+        await jpost('/api/write', { path: t.env.path, text: next });
+        t.env.text = next; t.env.exists = true;
+        logMsg(t.label + ' : clé enregistrée dans ' + esc(t.env.path), 'ok');
+      } catch (e) {
+        logMsg(t.label + ' : clé non enregistrée — ' + esc(e.message), 'w');
+      }
+    }
 
     let rd = null;
     try { rd = await jpost('/api/read', { path: t.file.path }); }
@@ -3568,8 +3605,20 @@ window.__app = { state, TARGETS, CORE, YCORE, detectAndRender, previewTarget, wr
     state.targets.filter(t => t.found || t.create).forEach(tg => {
       setVal(tg.id, 'baseURL2', state.info.base);
       // un identifiant auto (« lan-… ») suit l'endpoint ; un nom choisi est conservé
-      if (/^lan-/.test(String(getVal(tg.id, 'providerId') || ''))) {
-        setVal(tg.id, 'providerId', '');
+      const autoId = /^lan-/.test(String(getVal(tg.id, 'providerId') || ''));
+      if (autoId) {
+        // on recalcule l'identifiant sans suffixe de collision : c'est le même
+        // fournisseur qu'on réécrit, pas un second sur la même machine
+        const mdl = state.selModel || (state.info.models || [])[0] || {};
+        const d = TARGETS.defaults(state.info.base, mdl.id || '', []);
+        setVal(tg.id, 'providerId', d.id);
+        setVal(tg.id, 'providerName', d.name);
+        const envEl = document.querySelector('#card-' + tg.id + ' [data-envname]');
+        if (envEl && /^LAN_/.test(envEl.value)) {          // variable auto, à recalculer
+          envEl.value = '';
+          const st = cardValues[tg.id] || (cardValues[tg.id] = {});
+          st.__envname = '';
+        }
       }
       if (/^lan[:-]/.test(String(getVal(tg.id, 'providerName') || ''))) {
         setVal(tg.id, 'providerName', '');

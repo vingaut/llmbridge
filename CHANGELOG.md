@@ -3,6 +3,21 @@
 Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) · versionnage
 [SemVer](https://semver.org/lang/fr/).
 
+## [3.3.2] — 2026-10-29
+
+### Corrigé
+- **dsh réclamait une clé API alors que l'endpoint n'en demande pas.** on écrivait
+  `apiKeyEnv: <VAR>` même sans clé ; dsh cherche alors la variable, ne la trouve pas
+  et refuse la requête. Sans clé, la ligne n'est plus écrite — dsh garde un profil
+  « reference-free » et n'exige rien (comportement documenté du harnais).
+- même correction pour `key_env` côté Hermes.
+- quand une clé **est** saisie, elle est désormais écrite automatiquement dans le
+  `.env` du harnais (créé au besoin) au lieu de rester dans le formulaire.
+- bloc `.env` de l'interface : il ne s'affichait plus du tout depuis le passage au
+  pont local (chemin non transmis), donc la variable était invisible et non modifiable.
+- l'identifiant automatique ne reçoit plus de suffixe `-2` quand on réécrit le même
+  fournisseur, et la variable d'environnement suit l'identifiant retenu.
+
 ## [3.3.1] — 2026-10-28
 
 ### Corrigé
