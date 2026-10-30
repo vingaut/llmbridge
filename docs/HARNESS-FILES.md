@@ -67,14 +67,30 @@ model:
   mode `add` ;
 - mode `reset` : seuls `custom_providers` et `model` restent (très destructeur).
 
-## dsh — `~/.dsh/cordis.patch.yml`
+## dsh — `~/.dsh/profiles/<profil>/cordis.patch.yml`
+
+dsh compose son arbre par couches : bundles, puis **patch du profil**, puis patch
+home, puis overlays `--patch`. La page **Models** réécrit le patch du profil et
+refuse d'enregistrer dès qu'une couche de rang supérieur définit la même entrée :
+
+```
+Configuration for "llm-pi-ai" is overridden by a home patch or command-line overlay
+```
+
+L'outil écrit donc dans `~/.dsh/profiles/<profil>/cordis.patch.yml` (profil `web`
+en priorité, puis `headless`, `tui`), jamais dans `~/.dsh/cordis.patch.yml`. Si ce
+dernier définit encore `llm-pi-ai`, l'interface le signale : il faut déplacer le
+bloc dans le patch du profil pour retrouver une page Models utilisable.
+
+`agent-default-model` n'est modifié que si la case « activer » est cochée ; elle
+n'est pré-cochée que si aucun modèle par défaut n'existe déjà.
 
 `apiKeyEnv` est **toujours** écrit : le schéma de dsh le déclare `credential-ref`, et
 pi-ai refuse la requête (`No API key for provider`) quand la référence manque, même si
 l'endpoint n'en demande pas. La valeur va dans `~/.dsh/.env` — la clé réelle si elle est
 fournie, sinon `none` (dsh envoie alors `Authorization: Bearer none`, ignoré par
 llama.cpp / vLLM / Ollama). Le magasin géré de dsh (`~/.dsh/.credentials.yaml`) prime
-sur ce fichier : si un refus persiste, saisir la clé depuis la page Models de dsh. (+ `.env`)
+sur ce fichier : si un refus persiste, saisir la clé depuis la page Models de dsh.
 
 Fournisseur sous `llm-pi-ai → config.providers`, et `agent-default-model`.
 

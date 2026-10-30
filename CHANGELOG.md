@@ -3,6 +3,26 @@
 Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) · versionnage
 [SemVer](https://semver.org/lang/fr/).
 
+## [3.4.0] — 2026-10-30
+
+### Modifié
+- **dsh : la cible d'écriture est le patch du profil**
+  (`~/.dsh/profiles/<profil>/cordis.patch.yml`) — la couche que sa page Models
+  réécrit. Écrire dans le patch home rendait ce réglage impossible : dsh refuse
+  d'enregistrer avec « Configuration for "llm-pi-ai" is overridden by a home patch
+  or command-line overlay », ce qui bloquait toute création de fournisseur.
+- le profil visé est détecté (web en tête, puis headless/tui) et sélectionnable ;
+  l'interface signale un patch home qui définirait encore `llm-pi-ai`.
+- `agent-default-model` n'est plus détourné sans le dire : la case « activer » ne
+  se coche d'elle-même que si aucun modèle par défaut n'existe, et le modèle
+  courant est affiché au-dessus du formulaire.
+- les modes « remplacer » et « remise à zéro » disparaissent de la carte dsh :
+  ils supprimaient des entrées écrites à la main.
+
+### Corrigé
+- le `.env` de dsh reste `$DSH_HOME/.env` même quand le fichier visé est dans
+  `profiles/<nom>/` (il était déduit du dossier du fichier de configuration).
+
 ## [3.3.3] — 2026-10-29
 
 ### Corrigé

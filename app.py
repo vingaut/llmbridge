@@ -36,6 +36,7 @@ import argparse
 import glob
 import json
 import os
+import re
 import secrets
 import shutil
 import socket
@@ -54,7 +55,7 @@ from urllib import request as urlreq
 from urllib.parse import parse_qs, urlsplit
 
 APP = "llm-bridge"
-VERSION = "3.3.3"
+VERSION = "3.4.0"
 DEFAULT_PORT = 8766
 MAX_HTTP_BODY = 8 * 1024 * 1024      # réponse max d'une requête proxifiée
 MAX_REQ_BODY = 16 * 1024 * 1024      # corps max accepté par l'API
@@ -122,6 +123,12 @@ HARNESS = [
         "color": "#7fdbca", "note": "providers sous l'entrée llm-pi-ai + agent-default-model",
         "config": [".dsh/cordis.patch.yml"],
         "env": ".dsh/.env", "envPrefix": "",
+        # dsh compose son arbre par couches : le patch du profil est celle que la
+        # page Models réécrit. Écrire dans le patch home la rendrait non modifiable
+        # (« Configuration for "llm-pi-ai" is overridden by a home patch »).
+        "profile_layer": True, "profile_base": ".dsh/profiles",
+        "home_layer": ".dsh/cordis.patch.yml", "env_fixed": True,
+        "ui_entries": ["llm-pi-ai"], "keep_entries": ["agent-default-model"],
         "pkg": "@deepseek-ai/dsh",
         "bins": ["dsh"],
         "probe_paths": [r"%APPDATA%\npm\dsh.cmd"],
@@ -181,6 +188,48 @@ ENV_ENV = {"hermes": "HERMES_ENV_PATH"}
 MAX_DEPTH = 9            # profondeur max sous la racine scannée
 MAX_ENTRIES = 400_000    # nombre d'entrées max vues au total
 MAX_CFG_BYTES = 4 * 1024 * 1024
+
+
+def profile_patches(home: str, h: dict) -> list[tuple[str, str]]:
+    """(chemin, nom) des patches de profil d'un harnais à couches, profil web en tête.
+
+    Un harnais comme dsh applique ses couches dans l'ordre : bundles, patch du
+    profil, puis patch home et overlays. La page de réglages réécrit le patch du
+    profil ; elle refuse d'enregistrer si une couche de rang supérieur touche la
+    même entrée. On écrit donc dans le patch du profil, jamais dans le patch home.
+    """
+    base = os.path.join(home, *h["profile_base"].split("/"))
+    try:
+        names = [d for d in os.listdir(base) if os.path.isdir(os.path.join(base, d))]
+    except OSError:
+        return []
+    if not names:
+        return []
+    names.sort(key=lambda n: (n != "web", n))
+    with_patch = [n for n in names
+                  if os.path.isfile(os.path.join(base, n, "cordis.patch.yml"))]
+    ordered = with_patch + [n for n in names if n not in with_patch]
+    return [(os.path.join(base, n, "cordis.patch.yml"), n) for n in ordered]
+
+
+def entry_defined(text: str, entry_id: str) -> bool:
+    """Vrai si un patch YAML définit cette entrée (forme bloc ou forme flux)."""
+    pat = r"^\s*-\s*(?:\{\s*)?id\s*:\s*['\"]?" + re.escape(entry_id) + r"['\"]?\s*(?:,|$)"
+    return re.search(pat, text, re.M) is not None
+
+
+def entry_config(text: str, entry_id: str) -> dict:
+    """Champs scalaires d'une entrée de patch YAML (lecture prudente, sans parseur)."""
+    m = re.search(r"^-\s*id:\s*['\"]?" + re.escape(entry_id) + r"['\"]?\s*$\n((?:[ \t].*\n|\n)*)",
+                  text, re.M)
+    if not m:
+        return {}
+    out: dict = {}
+    for line in m.group(1).splitlines():
+        m2 = re.match(r"^ {4}([A-Za-z_][\w-]*)\s*:\s*['\"]?([^'\"#\s]*)", line)
+        if m2:
+            out[m2.group(1)] = m2.group(2)
+    return out
 
 
 class Ctx:
@@ -376,6 +425,30 @@ def harness_item(h: dict, root: str, tree: dict | None = None, overrides: dict |
             origins[os.path.abspath(path)] = origin
 
     custom = expand_path(ov.get("config", "")) if ov.get("config") else ""
+    # harnais à couches (dsh) : la cible d'écriture est le patch du profil, la
+    # couche que son interface réécrit ; le patch home n'est jamais proposé.
+    profiles: list[tuple[str, str]] = []
+    if h.get("profile_layer"):
+        home_real = os.path.realpath(root)      # suit la racine scannée, pas ~ figé
+        profiles = profile_patches(home_real, h)
+        if profiles:
+            item["profile"] = profiles[0][1]
+            item["profiles"] = [{"name": name, "path": path,
+                                 "exists": os.path.isfile(path)} for path, name in profiles]
+            item["defaults"]["config"] = profiles[0][0]
+            if h.get("env"):
+                item["defaults"]["env"] = os.path.join(home_real, *h["env"].split("/"))
+            hp = os.path.join(home_real, *h.get("home_layer", "").split("/")) if h.get("home_layer") else ""
+            if hp and os.path.isfile(hp):
+                item["homePath"] = hp
+                try:
+                    htxt = read_text(hp)
+                except OSError:
+                    htxt = ""
+                clashes = [e for e in (h.get("ui_entries") or []) if entry_defined(htxt, e)]
+                if clashes:
+                    item["homeBlocksUi"] = {"path": hp, "entries": clashes}
+
     if custom:
         item["custom"] = True
         if os.path.isdir(custom):
@@ -390,8 +463,14 @@ def harness_item(h: dict, root: str, tree: dict | None = None, overrides: dict |
     else:
         home = os.path.realpath(os.path.expanduser("~"))
         same_home = os.path.realpath(root).lower() == home.lower()
+        # 0. patch du profil : la couche que l'interface du harnais réécrit
+        for path, name in profiles:
+            if same_home or _inside(path, root):
+                add(path, "profil " + name)
         # 1. variables d'environnement (OPENCODE_CONFIG, HERMES_HOME, DSH_HOME…)
         for path, label, _var in env_candidates(h):
+            if profiles and os.path.realpath(path) == os.path.realpath(item.get("homePath") or ""):
+                continue          # jamais le patch home quand un profil existe
             if same_home or _inside(path, root):
                 add(path, label)
         # 2. chemin annoncé par le binaire (hermes config path / config env-path)
@@ -404,9 +483,11 @@ def harness_item(h: dict, root: str, tree: dict | None = None, overrides: dict |
                 env_announced = cli_path_cmd(exe, h["env_path_cmd"])
                 if env_announced and (same_home or _inside(env_announced, root)):
                     item["announced_env"] = env_announced
-        # 3. conventions par défaut
-        for rel in h["config"]:
-            add(os.path.join(root, *rel.split("/")), "default")
+        # 3. conventions par défaut (sauf pour un harnais à couches : le patch
+        #    home n'est pas une cible d'écriture)
+        if not profiles:
+            for rel in h["config"]:
+                add(os.path.join(root, *rel.split("/")), "default")
         # 4. ce que le binaire dit de son dossier de config (opencode debug paths)
         if h.get("discover") and exe:
             cdir = cli_config_dir(exe)
@@ -415,7 +496,10 @@ def harness_item(h: dict, root: str, tree: dict | None = None, overrides: dict |
                     add(os.path.join(cdir, os.path.basename(rel)), "debug paths")
         # 5. tout ce que le parcours du profil a trouvé (AppData compris)
         if tree:
+            home_layer = os.path.realpath(item.get("homePath") or "")
             for hit in tree.get(h["id"], []):
+                if home_layer and os.path.realpath(hit["path"]) == home_layer:
+                    continue      # couche home : jamais proposée comme cible
                 add(hit["path"], "scan")
 
     item["candidates"] = [{"path": p, "size": os.path.getsize(p),
@@ -434,6 +518,8 @@ def harness_item(h: dict, root: str, tree: dict | None = None, overrides: dict |
         same_home = os.path.realpath(root).lower() == home.lower()
         options = []
         for path, _label, _var in env_candidates(h):
+            if profiles and os.path.realpath(path) == os.path.realpath(item.get("homePath") or ""):
+                continue
             if same_home or _inside(path, root):
                 options.append(path)
         if item["customDir"]:
@@ -441,6 +527,8 @@ def harness_item(h: dict, root: str, tree: dict | None = None, overrides: dict |
         if item.get("announced"):
             options.append(item["announced"])
         options.append(item["defaults"]["config"])
+        if profiles:
+            options.insert(0, profiles[0][0])
         item["createPath"] = os.path.abspath(options[0])
     item["canCreate"] = bool(item["installed"] and not cfg)
 
@@ -448,6 +536,10 @@ def harness_item(h: dict, root: str, tree: dict | None = None, overrides: dict |
         st = os.stat(cfg)
         item.update(exists=True, path=os.path.abspath(cfg), name=os.path.basename(cfg),
                     size=st.st_size, mtime=st.st_mtime, text=read_text(cfg))
+        if h.get("ui_entries") and "agent-default-model" in (h.get("keep_entries") or []):
+            dm = entry_config(item["text"], "agent-default-model")
+            if dm.get("provider"):
+                item["defaultModel"] = dm
 
     if h["env"]:
         custom_env = expand_path(ov.get("env", "")) if ov.get("env") else ""
@@ -458,6 +550,8 @@ def harness_item(h: dict, root: str, tree: dict | None = None, overrides: dict |
             env_path = expand_path(os.environ[env_var])
         elif item.get("announced_env"):
             env_path = item["announced_env"]
+        elif h.get("env_fixed") and item["defaults"].get("env"):
+            env_path = item["defaults"]["env"]
         elif item["exists"] and item["path"]:
             env_path = os.path.join(os.path.dirname(item["path"]), ".env")
         elif item["customDir"]:

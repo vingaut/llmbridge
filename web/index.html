@@ -1310,6 +1310,9 @@ const I18N = {
     cancel: 'Annuler',
     noMatch: 'Aucun fichier de configuration trouvé ici.',
     pickOne: 'Plusieurs fichiers trouvés — choisis celui à modifier :',
+    profileLayer: "Couche de configuration (profil)",
+    homeLocksUi: "Le patch home définit aussi cette entrée : dsh refusera d'enregistrer depuis sa page Models. Déplace-la dans le patch du profil.",
+    defCurrent: "Modèle par défaut actuel : ",
     rescan: 'Rescanner',
     deep: 'Chercher aussi plus profond (si les fichiers sont hors des chemins par défaut)',
     thHarness: 'Harnais',
@@ -1418,6 +1421,9 @@ const I18N = {
     cancel: 'Cancel',
     noMatch: 'No configuration file found here.',
     pickOne: 'Several files found — pick the one to edit:',
+    profileLayer: "Configuration layer (profile)",
+    homeLocksUi: "The home patch also defines this entry: dsh will refuse to save from its Models page. Move it into the profile patch.",
+    defCurrent: "Current default model: ",
     rescan: 'Rescan',
     deep: 'Also search deeper (if the files are outside the default paths)',
     thHarness: 'Harness',
@@ -1530,6 +1536,9 @@ Object.assign(I18N, {
     cancel: 'Abbrechen',
     noMatch: 'Hier wurde keine Konfigurationsdatei gefunden.',
     pickOne: 'Mehrere Dateien gefunden — wähle die zu bearbeitende:',
+    profileLayer: "Konfigurationsschicht (Profil)",
+    homeLocksUi: "Der Home-Patch definiert diesen Eintrag ebenfalls: dsh verweigert das Speichern auf der Models-Seite. Verschiebe ihn in den Profil-Patch.",
+    defCurrent: "Aktuelles Standardmodell: ",
     rescan: 'Erneut suchen',
     deep: 'Auch tiefer suchen (wenn die Dateien nicht an den Standardpfaden liegen)',
     thHarness: 'Harness',
@@ -1633,6 +1642,9 @@ Object.assign(I18N, {
     cancel: 'Cancelar',
     noMatch: 'No se encontró ningún archivo de configuración aquí.',
     pickOne: 'Se encontraron varios archivos — elige el que quieres modificar:',
+    profileLayer: "Capa de configuración (perfil)",
+    homeLocksUi: "El parche home también define esta entrada: dsh rechazará guardar desde su página Models. Muévela al parche del perfil.",
+    defCurrent: "Modelo predeterminado actual: ",
     rescan: 'Volver a escanear',
     deep: 'Buscar también más profundo (si los archivos están fuera de las rutas por defecto)',
     thHarness: 'Arnés',
@@ -1736,6 +1748,9 @@ Object.assign(I18N, {
     cancel: 'Annulla',
     noMatch: 'Nessun file di configurazione trovato qui.',
     pickOne: 'Trovati più file — scegli quello da modificare:',
+    profileLayer: "Livello di configurazione (profilo)",
+    homeLocksUi: "Anche il patch home definisce questa voce: dsh rifiuterà di salvare dalla pagina Models. Spostala nel patch del profilo.",
+    defCurrent: "Modello predefinito attuale: ",
     rescan: 'Riscansiona',
     deep: 'Cerca anche più in profondità (se i file sono fuori dai percorsi predefiniti)',
     thHarness: 'Harness',
@@ -1839,6 +1854,9 @@ Object.assign(I18N, {
     cancel: 'Cancelar',
     noMatch: 'Nenhum ficheiro de configuração encontrado aqui.',
     pickOne: 'Vários ficheiros encontrados — escolhe o que queres editar:',
+    profileLayer: "Camada de configuração (perfil)",
+    homeLocksUi: "O patch home também define esta entrada: o dsh recusará guardar na página Models. Move-a para o patch do perfil.",
+    defCurrent: "Modelo predefinido atual: ",
     rescan: 'Analisar novamente',
     deep: 'Procurar também mais fundo (se os ficheiros estiverem fora dos caminhos predefinidos)',
     thHarness: 'Harness',
@@ -1942,6 +1960,9 @@ Object.assign(I18N, {
     cancel: 'Annuleren',
     noMatch: 'Geen configuratiebestand gevonden.',
     pickOne: 'Meerdere bestanden gevonden — kies het bestand om te bewerken:',
+    profileLayer: "Configuratielaag (profiel)",
+    homeLocksUi: "De home-patch definieert deze vermelding ook: dsh weigert op te slaan op de Models-pagina. Verplaats hem naar de profiel-patch.",
+    defCurrent: "Huidig standaardmodel: ",
     rescan: 'Opnieuw scannen',
     deep: 'Ook dieper zoeken (als de bestanden buiten de standaardpaden staan)',
     thHarness: 'Harness',
@@ -2045,6 +2066,9 @@ Object.assign(I18N, {
     cancel: 'Anuluj',
     noMatch: 'Nie znaleziono tutaj pliku konfiguracyjnego.',
     pickOne: 'Znaleziono kilka plików — wybierz ten do edycji:',
+    profileLayer: "Warstwa konfiguracji (profil)",
+    homeLocksUi: "Patch domowy też definiuje ten wpis: dsh odmówi zapisu na stronie Models. Przenieś go do patcha profilu.",
+    defCurrent: "Bieżący model domyślny: ",
     rescan: 'Skanuj ponownie',
     deep: 'Szukaj także głębiej (jeśli pliki są poza ścieżkami domyślnymi)',
     thHarness: 'Harness',
@@ -2738,7 +2762,10 @@ function cardHtml(h){
   const id = h.id;
   const fields = FIELDS[h.flavor].map(f => fieldHtml(id, f)).join('');
   const chosen = savedMode(id);
-  const modes = MODE_KEYS.map((m) => {
+  // harnais à couches : seul l'ajout est proposé, une réécriture complète
+  // supprimerait des entrées que l'utilisateur a écrites à la main
+  const avail = h.flavor === 'dsh' ? MODE_KEYS.filter(m => m[0] === 'add') : MODE_KEYS;
+  const modes = avail.map((m) => {
     const on = m[0] === chosen;
     return '<label class="' + (on ? 'on' : '') + '" data-card="' + id + '" data-mode="' + m[0] + '">' +
       '<input type="radio" name="mode-' + id + '" value="' + m[0] + '"' + (on ? ' checked' : '') + '>' +
@@ -2930,7 +2957,10 @@ function autoFillCards(force){
       put(id, 'model', modelId);
       put(id, 'ctx', ctx); put(id, 'out', budget); put(id, 'idle', 1800000);
       put(id, 'thinking', true); put(id, 'preserve', false); put(id, 'allModels', true);
-      setVal(id, 'setActive', true); put(id, 'effortDef', 'high');
+      // on ne détourne pas un modèle par défaut déjà choisi : la case ne se coche
+      // d'elle-même que s'il n'y en a pas (hôte vierge)
+      setVal(id, 'setActive', !(t && t.defaultModel && t.defaultModel.provider));
+      put(id, 'effortDef', 'high');
       put(id, 'efforts', 'off=none\nlow=low\nhigh=high\nmax=max');
       setEnvName(id, TARGETS.upper(d.id) + '_API_KEY');
     }
@@ -3018,8 +3048,15 @@ function cardOptions(t){
     models, setActive: getVal(id, 'setActive'), modelID: modelId, reasoningEffort: getVal(id, 'effortDef') || null });
 }
 const MODE_OK = ['add', 'replace', 'reset'];
-function savedMode(id){ const s = cardValues[id] && cardValues[id].__mode; return MODE_OK.includes(s) ? s : 'add'; }
+function savedMode(id){
+  const t = state.targets.find(x => x.id === id);
+  const s = cardValues[id] && cardValues[id].__mode;
+  if (t && t.flavor === 'dsh') return 'add';      // jamais de réécriture globale
+  return MODE_OK.includes(s) ? s : 'add';
+}
 function modeOf(id){
+  const t = state.targets.find(x => x.id === id);
+  if (t && t.flavor === 'dsh') return 'add';
   const r = document.querySelector('#cards [data-card="' + id + '"].on input');
   const v = r && r.value;
   if (MODE_OK.includes(v)) { const st = cardValues[id] || (cardValues[id] = {}); st.__mode = v; storeCards(); return v; }
@@ -3303,7 +3340,10 @@ window.__app = { state, TARGETS, CORE, YCORE, detectAndRender, previewTarget, wr
       env: it.env ? { name: '.env', size: it.env.size || 0, text: it.env.text || '',
                           path: it.env.path, server: true, exists: !!it.env.exists,
                           handle: it.env.exists ? { server: true, path: it.env.path } : null } : null,
-      summary: it.exists ? TARGETS.summarize(it.flavor, it.text) : null
+      summary: it.exists ? TARGETS.summarize(it.flavor, it.text) : null,
+      defaultModel: it.defaultModel || null,
+      profiles: it.profiles || null, profile: it.profile || null,
+      homePath: it.homePath || null, homeBlocksUi: it.homeBlocksUi || null
       };
     });
     renderDetect(state.targets);
@@ -3600,6 +3640,36 @@ window.__app = { state, TARGETS, CORE, YCORE, detectAndRender, previewTarget, wr
           '</select></div>';
         body.prepend(row);
         row.querySelector('select').addEventListener('change', ev => applyDirChoice(tg.id, ev.target.value));
+      }
+      // harnais à couches : on écrit dans le patch du profil, la couche que son
+      // interface réécrit (un patch home la rendrait non modifiable)
+      if (it && it.profiles && it.profiles.length && body && !body.querySelector('[data-profile]')) {
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.style.marginBottom = '8px';
+        row.innerHTML = '<div class="g1"><label>' + t('profileLayer') + '</label><select data-profile="' +
+          escA(tg.id) + '">' + it.profiles.map(p => '<option value="' + escA(p.path) + '"' +
+          (tg.file && p.path === tg.file.path ? ' selected' : '') + '>' + esc(p.name) +
+          (p.exists ? '' : '  ·  ' + esc(t('willCreate'))) + '</option>').join('') +
+          '</select></div>';
+        body.prepend(row);
+        row.querySelector('select').addEventListener('change', ev => applyDirChoice(tg.id, ev.target.value));
+      }
+      if (it && it.homeBlocksUi && body && !body.querySelector('[data-homelock]')) {
+        const w = document.createElement('div');
+        w.className = 'hint';
+        w.setAttribute('data-homelock', '1');
+        w.style.color = 'var(--warn)';
+        w.innerHTML = '⚠ ' + esc(t('homeLocksUi')) + ' <code>' + esc(it.homeBlocksUi.path) + '</code>';
+        body.prepend(w);
+      }
+      if (it && it.defaultModel && it.defaultModel.provider && body && !body.querySelector('[data-defcur]')) {
+        const d = document.createElement('div');
+        d.className = 'hint';
+        d.setAttribute('data-defcur', '1');
+        d.innerHTML = esc(t('defCurrent')) + '<code>' + esc(it.defaultModel.provider) +
+          (it.defaultModel.model ? '/' + esc(it.defaultModel.model) : '') + '</code>';
+        body.prepend(d);
       }
     });
   };
